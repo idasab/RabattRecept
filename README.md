@@ -369,6 +369,32 @@ Plats, annars är ortssökningen vägen framåt.
   inte är det, och att ett nekat platstillstånd leder till ortssökningen i
   stället för till en död skärm.
 
+## Design
+
+Paletten är varm och matglad, inte neutral. En receptapp ska göra en sugen på
+att laga något, och ett grått gränssnitt gör inte den saken.
+
+Grunden är gräddvit med en mjuk glöd av saffran och tomat i toppen, texten
+mörkbrun i stället för grafit, och accenterna hämtade ur maten själv: tomat för
+knappar och val, saffran för betyg, örtgrönt för det snabba och bär för den
+andra receptkällan. Färgen sitter i accenterna och inte i ytorna, så att
+receptbilderna får vara det som lyser.
+
+Färgen bär också information i stället för att bara dekorera:
+
+- **Kedjornas kryssrutor** fylls med kedjans egen färg, så Coops gröna och
+  Willys röda syns direkt i listan.
+- **Tidsspannen** har varsin färg — grönt för vardagsmat, saffran för en vanlig
+  middag, tomat för långkok — men bara när spannet är valt, annars blir raden
+  en tavla av kulörer.
+- **Receptkällan** har sin egen ton: tomat för Tasteline, bär för Zeta.
+- **Priset** på reavaran är det enda i rött i receptkortet, eftersom det är
+  fyndet man är där för.
+
+Receptbilderna ligger i 92 px i stället för 64, och rubrikerna klipps till två
+rader så att korten blir lika höga. Ytorna är fortfarande ljusa och linjerna
+hårfina — det är accenterna som fått färg, inte bakgrunden.
+
 ## Ikoner
 
 ```bash
@@ -376,8 +402,9 @@ python tools/generate-icons.py
 ```
 
 Skriptet ritar ikonerna och `favicon.ico` från grunden, utan beroenden utöver
-Pythons standardbibliotek. Motivet är ett procenttecken i grafit mot dämpad
-salviegrön.
+Pythons standardbibliotek. Motivet är ett procenttecken i gräddvitt mot en varm
+övergång från saffran till tomat — appens egna accentfärger, så att ikonen på
+hemskärmen ser ut som det man möts av när man öppnar den.
 
 ## Att veta om datakällan
 

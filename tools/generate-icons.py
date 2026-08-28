@@ -1,9 +1,10 @@
 """Genererar appens ikoner i alla storlekar, plus favicon.ico.
 
 Motivet är ett procenttecken i legostil — två ringar och en rak stapel i
-grafit mot en dämpad salviegrön botten. Körs med `python
-tools/generate-icons.py` och skriver över filerna i src/assets/icons. Inga
-beroenden utöver standardbiblioteket.
+gräddvitt mot en varm övergång från saffran till tomat. Färgerna är appens
+egna accenter, så ikonen på hemskärmen ser ut som det man möts av när man
+öppnar den. Körs med `python tools/generate-icons.py` och skriver över filerna
+i src/assets/icons. Inga beroenden utöver standardbiblioteket.
 """
 import math
 import struct
@@ -15,9 +16,9 @@ OUT = Path(__file__).resolve().parent.parent / "src" / "assets" / "icons"
 # 180 för hemskärmen, 192 och 512 för manifestet, 1024 för hög upplösning.
 SIZES = (180, 192, 512, 1024)
 
-GRAPHITE = (48, 51, 56)
-SAGE_TOP = (208, 216, 205)
-SAGE_BOTTOM = (184, 197, 183)
+CREAM = (255, 246, 236)
+SAFFRON = (232, 160, 32)
+TOMATO = (198, 74, 42)
 
 # Supersampling per axel. Motivet har hårda kanter, så det behövs för mjuka linjer.
 SAMPLES = 3
@@ -63,8 +64,9 @@ def in_percent(x, y):
 
 def sample(x, y):
     if in_percent(x, y):
-        return GRAPHITE
-    return lerp(SAGE_TOP, SAGE_BOTTOM, y)
+        return CREAM
+    # Diagonal övergång, så att den följer procenttecknets egen lutning.
+    return lerp(SAFFRON, TOMATO, (x + y) / 2)
 
 
 def chunk(tag, payload):

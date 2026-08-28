@@ -56,12 +56,17 @@ const RATING = new Intl.NumberFormat('sv-SE', {
               </span>
               <span class="votes">{{ votes(recipe) }}</span>
               <span class="duration" *ngIf="duration(recipe) as time">{{ time }}</span>
-              <span class="source">{{ recipe.source }}</span>
+              <span class="source" [class.zeta]="recipe.source === 'Zeta'">
+              {{ recipe.source }}
+            </span>
             </span>
             <span class="matches">
+              <!-- &ngsp; är ett blanksteg som Angular inte plockar bort. Utan
+                   dem klistras varunamn, pris och butik ihop. -->
               <span class="match" *ngFor="let match of shownMatches(recipe)">
-                <span class="vara">{{ match.ingredient }}</span>
-                {{ price(match) }} på {{ match.chainName }}
+                <span class="vara">{{ match.ingredient }}</span>&ngsp;<span class="pris">{{
+                  price(match)
+                }}</span>&ngsp;på {{ match.chainName }}
               </span>
               <span class="match more-matches" *ngIf="hiddenMatches(recipe) as hidden">
                 +{{ hidden }} {{ hidden === 1 ? 'vara till' : 'varor till' }}
@@ -99,21 +104,38 @@ const RATING = new Intl.NumberFormat('sv-SE', {
 
       .recipe {
         display: grid;
-        grid-template-columns: 64px minmax(0, 1fr) auto;
+        grid-template-columns: 92px minmax(0, 1fr) auto;
         gap: 14px;
         align-items: center;
-        padding: 12px 14px;
+        padding: 12px 14px 12px 12px;
         color: inherit;
         text-decoration: none;
         -webkit-tap-highlight-color: transparent;
+        transition: box-shadow 160ms ease, transform 160ms ease;
       }
 
+      .recipe:hover {
+        box-shadow: var(--shadow-lift);
+        transform: translateY(-1px);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .recipe {
+          transition: none;
+        }
+
+        .recipe:hover {
+          transform: none;
+        }
+      }
+
+      /* Bilden är det som gör en receptlista aptitlig, så den får ta plats. */
       .thumb {
-        width: 64px;
-        height: 64px;
-        border-radius: 12px;
+        width: 92px;
+        height: 92px;
+        border-radius: 16px;
         object-fit: cover;
-        background: var(--surface-soft);
+        background: linear-gradient(140deg, var(--accent-soft), rgba(232, 160, 32, 0.18));
       }
 
       .thumb-empty {
@@ -126,10 +148,18 @@ const RATING = new Intl.NumberFormat('sv-SE', {
         min-width: 0;
       }
 
+      /* Två rader räcker för att känna igen rätten, och håller korten lika
+         höga. Receptnamn kan vara mycket långa: "Shawarmarostad kålrot i
+         pitabröd med hummus och grön tahinisås". */
       .title {
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 1.3;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: -0.2px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
 
       /* Raden får radbryta i stället för att pressa ihop varje del till en
@@ -160,7 +190,12 @@ const RATING = new Intl.NumberFormat('sv-SE', {
       .rating svg {
         width: 13px;
         height: 13px;
-        color: var(--text-faint);
+        color: var(--saffron);
+      }
+
+      .score {
+        font-weight: 600;
+        color: var(--text);
       }
 
       .votes,
@@ -169,14 +204,21 @@ const RATING = new Intl.NumberFormat('sv-SE', {
       }
 
       /* Vilken sajt receptet ligger på. Källorna skiljer sig i stil och
-         urval, så det är värt att veta innan man klickar. */
+         urval, så det är värt att veta innan man klickar. Varsin färg gör
+         skillnaden läsbar på en blick. */
       .source {
-        padding: 1px 7px;
+        padding: 1px 8px;
         border-radius: 999px;
-        background: var(--surface-soft);
+        background: var(--accent-soft);
         font-size: 10.5px;
+        font-weight: 600;
         letter-spacing: 0.3px;
-        color: var(--text-faint);
+        color: var(--accent);
+      }
+
+      .source.zeta {
+        background: rgba(166, 58, 99, 0.13);
+        color: var(--berry);
       }
 
       .matches {
@@ -193,9 +235,15 @@ const RATING = new Intl.NumberFormat('sv-SE', {
         white-space: nowrap;
       }
 
-      /* Varunamnet bär informationen; priset och butiken är stödet. */
+      /* Varunamnet bär informationen; priset lyfts eftersom det är fyndet. */
       .vara {
+        font-weight: 600;
         color: var(--text-muted);
+      }
+
+      .pris {
+        font-weight: 700;
+        color: var(--accent);
       }
 
       .more-matches {
@@ -205,27 +253,31 @@ const RATING = new Intl.NumberFormat('sv-SE', {
       .go {
         width: 18px;
         height: 18px;
-        color: var(--text-faint);
+        color: var(--accent);
       }
 
       .more {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 7px;
         width: 100%;
-        min-height: 44px;
-        margin-top: 2px;
+        min-height: 48px;
+        margin-top: 4px;
         padding: 0 20px;
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        background: var(--surface);
-        color: var(--accent);
-        font-size: 13px;
+        border: 0;
+        border-radius: 20px;
+        background: linear-gradient(120deg, var(--accent), #e0642f);
+        box-shadow: var(--shadow);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
       }
 
       .remaining {
-        color: var(--text-faint);
+        color: rgba(255, 255, 255, 0.72);
+        font-weight: 400;
       }
     `,
   ],

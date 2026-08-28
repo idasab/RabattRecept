@@ -32,7 +32,7 @@ const STEP = 4;
 
       <ul class="chains">
         <li *ngFor="let chain of visibleChains; trackBy: trackById">
-          <label class="chain">
+          <label class="chain" [style.--kedja]="chain.color">
             <input
               type="checkbox"
               [attr.aria-label]="label(chain)"
@@ -87,6 +87,7 @@ const STEP = 4;
         background: none;
         color: var(--accent);
         font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
       }
 
@@ -136,15 +137,15 @@ const STEP = 4;
       }
 
       input:checked {
-        border-color: var(--text);
-        background: var(--text) 50% 50% / 12px 10px no-repeat
+        border-color: var(--kedja, var(--text));
+        background: var(--kedja, var(--text)) 50% 50% / 12px 10px no-repeat
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5.2 4.3 8.5 11 1.5' fill='none' stroke='%23f3f2ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       }
 
       .dot {
         flex: none;
-        width: 8px;
-        height: 8px;
+        width: 9px;
+        height: 9px;
         border-radius: 50%;
       }
 
@@ -152,12 +153,14 @@ const STEP = 4;
         flex: 1;
         min-width: 0;
         font-size: 15px;
+        font-weight: 600;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
       input:not(:checked) ~ .name {
+        font-weight: 500;
         color: var(--text-muted);
       }
 
@@ -194,7 +197,7 @@ const STEP = 4;
       }
 
       .star.on {
-        color: var(--text);
+        color: var(--saffron);
       }
 
       .star svg {
@@ -215,6 +218,7 @@ const STEP = 4;
         background: none;
         color: var(--accent);
         font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
       }
 

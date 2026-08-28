@@ -1,21 +1,36 @@
 /*
- * Ljus, dämpad grundpalett. Kedjornas egna färger är starka och många, så de
- * får bara synas som små prickar — ytorna hålls neutrala för att listan ska gå
- * att läsa när tolv kedjor visas samtidigt.
+ * Varm, matglad palett. Appen handlar om att bli sugen på att laga något, och
+ * ett grått gränssnitt gör inte den saken. Grunden är gräddvit med en mjuk
+ * glöd i toppen, texten mörkbrun i stället för grafit, och accenterna hämtade
+ * ur maten själv: tomat, saffran, örtgrönt och bär.
+ *
+ * Ytorna hålls fortfarande ljusa. Färgen sitter i accenterna, inte i bakgrunden,
+ * så att receptbilderna får vara det som lyser.
  */
 :root {
   color-scheme: light;
 
-  --bg: #f3f2ef;
-  --surface: rgba(255, 255, 255, 0.72);
-  --surface-soft: rgba(28, 30, 34, 0.04);
-  --border: rgba(28, 30, 34, 0.09);
-  --border-strong: rgba(28, 30, 34, 0.22);
-  --text: #1c1e22;
-  --text-muted: rgba(28, 30, 34, 0.62);
-  --text-faint: rgba(28, 30, 34, 0.42);
-  --accent: #6b7f96;
-  --shadow: 0 14px 34px rgba(28, 30, 34, 0.08);
+  --bg: #fff6ec;
+  --surface: #ffffff;
+  --surface-soft: rgba(198, 74, 42, 0.07);
+  --border: rgba(74, 42, 28, 0.11);
+  --border-strong: rgba(74, 42, 28, 0.28);
+  --text: #3b2418;
+  --text-muted: rgba(59, 36, 24, 0.68);
+  --text-faint: rgba(59, 36, 24, 0.46);
+
+  /* Tomat: knappar, länkar och det som är valt. */
+  --accent: #c64a2a;
+  --accent-soft: rgba(198, 74, 42, 0.12);
+  /* Saffran: betyg och det som ska kännas som ett fynd. */
+  --saffron: #e8a020;
+  /* Örtgrönt: det snabba och enkla. */
+  --herb: #4f8a4b;
+  /* Bär: den andra receptkällan, och långkoken. */
+  --berry: #a63a63;
+
+  --shadow: 0 10px 30px rgba(120, 60, 30, 0.1);
+  --shadow-lift: 0 14px 36px rgba(120, 60, 30, 0.16);
 }
 
 * {
@@ -30,6 +45,15 @@ body {
 body {
   margin: 0;
   background: var(--bg);
+  /* Glöden ligger stilla i toppen och färgar inte hela ytan — samma tanke som
+     i resten av appen: färgen ska pigga upp, inte skrika. */
+  background-image: radial-gradient(
+      120% 70% at 12% -8%,
+      rgba(232, 160, 32, 0.28) 0%,
+      rgba(232, 160, 32, 0) 60%
+    ),
+    radial-gradient(90% 55% at 92% -4%, rgba(198, 74, 42, 0.22) 0%, rgba(198, 74, 42, 0) 62%);
+  background-attachment: fixed;
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
@@ -50,20 +74,19 @@ app-root {
 .card {
   padding: 18px 20px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
 }
 
 /* Genomgående rubrikstil för korten. */
 .card-heading {
   margin: 0;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.1px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--accent);
 }
 
 /* Läses av skärmläsare men syns inte. Används för live-regionen. */
@@ -84,6 +107,6 @@ button {
 }
 
 :focus-visible {
-  outline: 1.5px solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
