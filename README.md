@@ -414,19 +414,31 @@ hårfina — det är accenterna som fått färg, inte bakgrunden.
 
 ### Typsnitt
 
-De största rubrikerna — ortnamnet och inställningsmenyns titel — sätts i
-**Permanent Marker**. Resten av appen står kvar i systemfonten; markörfonten är
-för tung för brödtext och för siffror.
+Tre nivåer, med olika uppgifter:
 
-Fonten ligger i [src/assets/fonts](src/assets/fonts) i stället för att länkas
+| Nivå | Typsnitt | Var |
+| --- | --- | --- |
+| Störst | **Permanent Marker** | Ortnamnet, inställningsmenyns titel |
+| Etiketter | **Commissioner** | "PLATS", "KEDJOR NÄRA DIG", "LAGA AV VECKANS REA" |
+| Allt annat | Systemfonten | Recepttitlar, brödtext, priser och siffror |
+
+Markörfonten är för tung för brödtext och för siffror, och Commissioner är vald
+för att den är smal och lågkontrastig och håller ihop även spärrad i versaler.
+Systemfonten får bära resten: den är den enda som redan finns på enheten och
+alltså den snabbaste, och recepttitlarna är många.
+
+Fonterna ligger i [src/assets/fonts](src/assets/fonts) i stället för att länkas
 från Google. En app som ska öppnas från hemskärmen ska inte behöva vänta på ett
-anrop till en tredje part för att kunna rita sin rubrik, och den ska fungera
-utan nät — filen ligger därför i service workerns appskal och laddas med
-resten. Permanent Marker är Apache 2.0-licensierad, så den får distribueras.
-`font-display: swap` gör att rubriken visas i systemfonten tills markörfonten
-laddat, i stället för att vara osynlig.
+anrop till en tredje part för att kunna rita sina rubriker, och den ska fungera
+utan nät — filerna ligger därför i service workerns appskal och laddas med
+resten. Licenserna tillåter det. `font-display: swap` gör att rubrikerna visas
+i systemfonten tills fonterna laddat, i stället för att vara osynliga.
 
-Uppdatera fonten med:
+Bara den latinska delmängden hämtas. Appen är på svenska, och de kyrilliska,
+grekiska och vietnamesiska snitten skulle femdubbla vikten utan att någonsin
+ritas. Tillsammans väger de två fonterna 66 kB.
+
+Uppdatera fonterna med:
 
 ```bash
 sh tools/fetch-font.sh
