@@ -114,7 +114,7 @@ Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.servic
    "gul lök(ar)", aldrig med "lök", så en enda term per vara hittar långt
    färre recept.
 3. Recepten hämtas i ett anrop för alla ingredienser och sållas på betyg:
-   **minst 3,5 av 5, från fler än 5 röster.** Betygskravet ensamt räcker inte —
+   **minst 3,5 av 5, från minst 5 röster.** Betygskravet ensamt räcker inte —
    ett femma från en enda röst säger ingenting om receptet, bara om den som
    råkade rösta. Recept helt utan betyg faller bort på samma villkor.
 4. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
@@ -344,5 +344,5 @@ rabattsiffra. API:et är öppet men odokumenterat; går det sönder är det
 Receptmatchningen är en gissning, inte en varukoppling. Appen vet inte att
 butikens "Kycklinglårfilé" och Tastelines "Kyckling" är samma sak i annat än
 namnet, så ett recept kan råka föreslås på fel vara. Betygen är Tastelines egna
-besökarbetyg; appen kräver fler än fem röster, och antalet står i listan så att
+besökarbetyg; appen kräver minst fem röster, och antalet står i listan så att
 man kan väga in det själv därutöver.

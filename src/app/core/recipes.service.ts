@@ -10,8 +10,8 @@ import { TastelineRecipe, TastelineService, TastelineTerm } from './tasteline.se
 export const MIN_RATING = 3.5;
 
 /**
- * Kravet: betyget måste vila på fler röster än så här. Ett femma från en enda
- * röst säger ingenting om receptet, bara om den som råkade rösta.
+ * Kravet: betyget måste vila på minst så här många röster. Ett femma från en
+ * enda röst säger ingenting om receptet, bara om den som råkade rösta.
  */
 export const MIN_VOTES = 5;
 
@@ -132,7 +132,7 @@ export class RecipesService {
       const score = entry.meta?.tasteline_recipe_data?.recipe?.rating;
       const rating = Number(score?.rating ?? 0);
       const votes = Number(score?.votes ?? 0);
-      if (!(rating >= MIN_RATING) || !(votes > MIN_VOTES)) {
+      if (!(rating >= MIN_RATING) || !(votes >= MIN_VOTES)) {
         continue;
       }
 

@@ -124,7 +124,7 @@
     <h2 class="card-heading">Recept på det som är billigt</h2>
     <p class="lead">
       Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg hos Tasteline från
-      fler än {{ minVotes }} röster. Klicka för att öppna receptet.
+      minst {{ minVotes }} röster. Klicka för att öppna receptet.
     </p>
   </section>
 
@@ -155,7 +155,7 @@
     </ng-container>
     <ng-container *ngIf="chains().length && selected().size">
       Ingen huvudråvara är nedsatt hos de valda kedjorna den här veckan, eller så når inget av
-      recepten upp till {{ minRating }} i betyg från fler än {{ minVotes }} röster. Appen letar bara recept när själva råvaran är
+      recepten upp till {{ minRating }} i betyg från minst {{ minVotes }} röster. Appen letar bara recept när själva råvaran är
       på rea — kött, fisk, kyckling, färs — inte när smöret är det. Prova att kryssa i fler
       kedjor.
     </ng-container>

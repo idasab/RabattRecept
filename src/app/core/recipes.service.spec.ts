@@ -98,21 +98,18 @@ describe('RecipesService', () => {
     });
   });
 
-  it('visar bara recept som fler än fem har röstat på', (done) => {
+  it('visar bara recept som minst fem har röstat på', (done) => {
     // Ett femma från en enda röst säger inget om receptet.
     tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [
       recipe(1, 'En enda röst', 5, 1, [5]),
-      recipe(2, 'Precis för få', 4.8, MIN_VOTES, [5]),
-      recipe(3, 'Precis tillräckligt', 4.2, MIN_VOTES + 1, [5]),
+      recipe(2, 'Precis för få', 4.8, MIN_VOTES - 1, [5]),
+      recipe(3, 'Precis på gränsen', 4.2, MIN_VOTES, [5]),
       recipe(4, 'Väl beprövat', 4.1, 453, [5]),
     ];
 
     service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
-      expect(recipes.map((entry) => entry.title)).toEqual([
-        'Precis tillräckligt',
-        'Väl beprövat',
-      ]);
+      expect(recipes.map((entry) => entry.title)).toEqual(['Precis på gränsen', 'Väl beprövat']);
       done();
     });
   });
@@ -120,7 +117,7 @@ describe('RecipesService', () => {
   it('sorterar högsta betyg först och flest röster vid lika betyg', (done) => {
     tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [
-      recipe(1, 'Fyra, få röster', 4, 6, [5]),
+      recipe(1, 'Fyra, få röster', 4, 5, [5]),
       recipe(2, 'Fyra, många röster', 4, 900, [5]),
       recipe(3, 'Fem', 5, 8, [5]),
     ];
