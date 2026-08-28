@@ -28,6 +28,21 @@ describe('ChainFilterComponent', () => {
     fixture.detectChanges();
   }
 
+  /** Byter favoriter utifrån, som föräldern gör vid ett stjärnklick. */
+  function favorite(...ids: string[]): void {
+    const previous = fixture.componentInstance.favorites;
+    fixture.componentInstance.favorites = new Set(ids);
+    fixture.componentInstance.ngOnChanges({
+      favorites: {
+        currentValue: new Set(ids),
+        previousValue: previous,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    fixture.detectChanges();
+  }
+
   function stars(): HTMLButtonElement[] {
     return Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.star')
@@ -106,15 +121,58 @@ describe('ChainFilterComponent', () => {
     expect(rows().length).toBe(8);
   });
 
-  it('börjar om kort när en ny hämtning ger nya kedjor', () => {
+  it('fäller inte ihop en utfälld lista när en kedja stjärnmärks', () => {
+    setChains(12);
+    moreButton()?.click();
+    fixture.detectChanges();
+
+    favorite('k6');
+
+    expect(rows().length).toBe(8);
+  });
+
+  it('växer så att en ny favorit får plats', () => {
+    setChains(12, ['k0', 'k1', 'k2', 'k3']);
+    expect(rows().length).toBe(4);
+
+    favorite('k0', 'k1', 'k2', 'k3', 'k4');
+
+    expect(rows().length).toBe(5);
+  });
+
+  it('börjar om kort när en ny hämtning ger andra kedjor', () => {
     setChains(12);
     moreButton()?.click();
     fixture.detectChanges();
     expect(rows().length).toBe(8);
 
-    setChains(12);
+    // En ny ort ger en annan uppsättning kedjor.
+    setChains(9);
 
     expect(rows().length).toBe(4);
+  });
+
+  it('behåller utfällningen när samma kedjor sorteras om', () => {
+    setChains(12);
+    moreButton()?.click();
+    fixture.detectChanges();
+    expect(rows().length).toBe(8);
+
+    // Föräldern sorterar om listan vid varje stjärnklick och skickar in en ny
+    // array med samma kedjor. Det är ingen ny hämtning.
+    const resorted = [...fixture.componentInstance.chains].reverse();
+    fixture.componentInstance.chains = resorted;
+    fixture.componentInstance.ngOnChanges({
+      chains: {
+        currentValue: resorted,
+        previousValue: [],
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    fixture.detectChanges();
+
+    expect(rows().length).toBe(8);
   });
 
   it('visar alla favoriter även när de är fler än fyra', () => {
@@ -122,6 +180,13 @@ describe('ChainFilterComponent', () => {
 
     expect(rows().length).toBe(6);
     expect(moreButton()?.textContent).toContain('6 kvar');
+  });
+
+  it('visar fyra rader när favoriterna är färre än fyra', () => {
+    setChains(12, ['k0', 'k1']);
+
+    expect(rows().length).toBe(4);
+    expect(moreButton()?.textContent).toContain('8 kvar');
   });
 
   it('markerar stjärnan för favoriter och lämnar övriga omarkerade', () => {

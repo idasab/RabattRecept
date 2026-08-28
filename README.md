@@ -70,8 +70,9 @@ npm run lint
 ## Favoriter
 
 Stjärnan bredvid en kedja gör den till favorit. Favoriter ligger alltid överst
-och visas alltid, även om de är fler än fyra — en favorit gömd bakom "Visa
-fler" vore ingen favorit.
+och visas alltid: har du fler än fyra favoriter börjar listan på så många rader
+som du har favoriter, annars på fyra. En favorit gömd bakom "Visa fler" vore
+ingen favorit.
 
 Regeln för vad som är ikryssat är avsiktligt enkel: **när appen öppnas är
 precis dina favoriter ikryssade, ingen annan.** Kryssar du i en kedja till
@@ -118,9 +119,9 @@ Plats, annars är ortssökningen vägen framåt.
   närmaste butiken först, att den närmaste av flera butiker vinner, och att en
   kedja utan känd butik hamnar sist utan avstånd.
 - **[chain-filter.component.spec.ts](src/app/components/chain-filter.component.spec.ts)**
-  täcker listan: fyra rader från början, fyra till per klick, att knappen
-  försvinner när allt visas, att alla favoriter alltid syns, och att listan inte
-  fälls ihop när markeringen ändras.
+  täcker listan: fyra rader från början, fler när favoriterna är fler, fyra till
+  per klick, att knappen försvinner när allt visas, och att en utfälld lista
+  varken fälls ihop av ett kryss eller av en ny stjärna.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med
   stoppade tjänster och kontrollerar det som knyter ihop den: att en urkryssad
   kedja försvinner ur listan, att en favorit lyfts överst och kryssas i, att

@@ -235,19 +235,38 @@ export class ChainFilterComponent implements OnChanges {
   @Output() readonly clear = new EventEmitter<void>();
 
   private shown = STEP;
+  private chainKey = '';
 
   /**
-   * En ny hämtning ger en ny uppsättning kedjor, och då börjar listan om kort.
-   * Bara kedjorna får fälla ihop den: markeringen byts vid varje kryss, och en
-   * lista som slog igen så fort man kryssade i något vore obrukbar.
+   * Listan börjar på fyra rader, eller på så många favoriter man har om de är
+   * fler — en favorit gömd bakom "Visa fler" vore inte längre en favorit.
    *
-   * Alla favoriter visas alltid, även om de är fler än fyra — en favorit som
-   * ligger gömd bakom "Visa fler" vore inte längre en favorit.
+   * Bara en ny uppsättning kedjor får fälla ihop listan igen, och det avgörs
+   * på kedjornas identiteter snarare än på att arrayen är ny. Föräldern
+   * sorterar om listan varje gång en stjärna sätts, så en jämförelse på
+   * referens skulle fälla ihop en utfälld lista vid varje stjärnklick.
+   *
+   * Blir det bara en omsortering växer listan vid behov men krymper aldrig,
+   * och markeringen rör den inte alls: en lista som slog igen så fort man
+   * kryssade i något vore obrukbar.
    */
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['chains'] || changes['favorites']) {
-      this.shown = Math.max(STEP, this.favoriteCount);
+    if (!changes['chains'] && !changes['favorites']) {
+      return;
     }
+
+    const key = this.chains
+      .map((chain) => chain.id)
+      .sort()
+      .join('|');
+
+    if (changes['chains'] && key !== this.chainKey) {
+      this.shown = Math.max(STEP, this.favoriteCount);
+    } else {
+      this.shown = Math.max(this.shown, this.favoriteCount);
+    }
+
+    this.chainKey = key;
   }
 
   get visibleChains(): readonly Chain[] {
