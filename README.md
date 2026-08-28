@@ -412,6 +412,26 @@ Receptbilderna ligger i 92 px i stället för 64, och rubrikerna klipps till tv�
 rader så att korten blir lika höga. Ytorna är fortfarande ljusa och linjerna
 hårfina — det är accenterna som fått färg, inte bakgrunden.
 
+### Typsnitt
+
+De största rubrikerna — ortnamnet och inställningsmenyns titel — sätts i
+**Permanent Marker**. Resten av appen står kvar i systemfonten; markörfonten är
+för tung för brödtext och för siffror.
+
+Fonten ligger i [src/assets/fonts](src/assets/fonts) i stället för att länkas
+från Google. En app som ska öppnas från hemskärmen ska inte behöva vänta på ett
+anrop till en tredje part för att kunna rita sin rubrik, och den ska fungera
+utan nät — filen ligger därför i service workerns appskal och laddas med
+resten. Permanent Marker är Apache 2.0-licensierad, så den får distribueras.
+`font-display: swap` gör att rubriken visas i systemfonten tills markörfonten
+laddat, i stället för att vara osynlig.
+
+Uppdatera fonten med:
+
+```bash
+sh tools/fetch-font.sh
+```
+
 ## Ikoner
 
 ```bash

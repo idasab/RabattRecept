@@ -159,8 +159,10 @@ import { FormsModule } from '@angular/forms';
 
       h2 {
         margin: 0;
-        font-size: 17px;
-        font-weight: 600;
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 400;
+        color: var(--accent);
       }
 
       h3 {

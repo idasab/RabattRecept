@@ -27,11 +27,13 @@
 }
 
 h1 {
-  margin: 2px 0 0;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.7px;
-  line-height: 1.1;
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 400;
+  /* Markörfonten har egen bredd inbyggd; negativt spärr gör den trång. */
+  letter-spacing: 0;
+  line-height: 1.05;
   /* Ortnamnet är det första man ser. Övergången gör det till en rubrik man
      lägger märke till i stället för en etikett. */
   background: linear-gradient(96deg, var(--accent) 12%, var(--saffron) 96%);
