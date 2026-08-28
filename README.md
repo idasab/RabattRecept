@@ -459,6 +459,45 @@ Uppdatera fonterna med:
 sh tools/fetch-font.sh
 ```
 
+## Publicera till GitHub Pages
+
+```bash
+python tools/build-pages.py
+```
+
+Skriptet bygger appen med rätt base href och lägger resultatet i grenen
+`gh-pages`. Arbetskatalogen och grenen du står på lämnas orörda — bygget
+committas i ett tillfälligt git-arbetsträd. Pusha sedan:
+
+```bash
+git push origin gh-pages
+```
+
+Första gången behöver GitHub ställas in: **Settings → Pages → Source: Deploy
+from a branch**, gren `gh-pages`, mapp `/ (root)`. Appen hamnar på
+`https://<användare>.github.io/RabattRecept/`. Pages kräver att repot är
+publikt, om man inte betalar för planen.
+
+Tre saker som måste stämma, och som skriptet sköter:
+
+- **Base href.** Pages serverar projektet i en underkatalog, så appen byggs med
+  `--base-href /RabattRecept/`. Utan det pekar alla tillgångar fel.
+  Service workern följer med automatiskt: `ngsw.json` får samma prefix.
+- **`.nojekyll`.** Utan den filen kör Pages allt genom Jekyll först, som
+  ignorerar filer och kataloger som börjar med understreck.
+- **Bygg inte för hand i Git Bash.** MSYS översätter argument som ser ut som
+  sökvägar, så `--base-href /RabattRecept/` blir
+  `C:/Program Files/Git/RabattRecept/` och appen får en base href som pekar rakt
+  ut i tomma intet. Skriptet anropar npx utan skal och undgår det.
+
+Appen fungerar bra på Pages i övrigt: den har ingen router och behöver därför
+ingen 404-omskrivning, och Pages serverar över HTTPS, vilket både geolocation
+och service workern kräver.
+
+Det finns inget CI-workflow. Ett sådant provades i systerprojektet
+WeatherClothing men gick inte att få grönt på GitHub-runnern, och ett trasigt
+workflow som körs vid varje push ger bara röda kryss utan nytta.
+
 ## Ikoner
 
 ```bash
