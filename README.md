@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 140 stycken:
+Appen svarar på http://localhost:4200. Testerna, 143 stycken:
 
 ```bash
 npm run test:ci
@@ -160,7 +160,19 @@ tror.
 **En uteslutning får bestå av flera ord, och då måste alla finnas i
 erbjudandet.** Det är skillnaden mellan att välja bort en råvara och att välja
 bort ett visst utförande av den: `kyckling` stoppar all kyckling, medan
-`färsk kycklingfilé` lämnar den frysta kvar. Ordföljden spelar ingen roll.
+`färsk kyckling` lämnar den frysta kvar. Ordföljden spelar ingen roll.
+
+Både rubriken och beskrivningen läses. Det är nödvändigt, för det är i
+beskrivningen butikerna skriver om varan är färsk eller fryst — rubriken
+"KYCKLINGFILÉ" säger ingenting, beskrivningen "IVARS • 2 kg • Djupfryst" säger
+allt. Tjeks egna `category_ids` är tomma på samtliga erbjudanden och går alltså
+inte att använda.
+
+Två saker följer av att beskrivningen läses. Den nämner också sådant som inte
+är varan — märke, ursprung, jämförpris — så en uteslutning kan träffa bredare
+än man tänkt. Och orden matchas som de står: `färsk kyckling` fångar inte den
+som beskrivs som *kyld*, vilket i praktiken är samma sak. Vill man bort båda
+får man lägga till `kyld kyckling` också.
 
 ## Favoriter
 
@@ -195,7 +207,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-140 test i tretton filer:
+143 test i tretton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -235,8 +247,10 @@ Plats, annars är ortssökningen vägen framåt.
 - **[food-exclusions.spec.ts](src/app/core/food-exclusions.spec.ts)** täcker
   uteslutningarna: att ordet fångas i början och slutet av ett sammansatt
   varunamn, att det matchar via råvaran när rubriken stavar annorlunda, att en
-  fras kräver alla sina ord — "färsk kycklingfilé" stoppar den färska men inte
-  den frysta — och att samma vara inte kan läggas till två gånger.
+  fras kräver alla sina ord, att färskt och fryst läses ur beskrivningen med
+  riktiga butikstexter som underlag — "färsk kyckling" stoppar KYCKLINGSTEAK
+  men inte den djupfrysta KYCKLINGFILÉ — och att samma vara inte kan läggas
+  till två gånger.
 - **[settings-menu.component.spec.ts](src/app/components/settings-menu.component.spec.ts)**
   täcker menyn: att den är en dialog, att den stängs på tre sätt, att fokus
   hamnar på panelen och inte i fältet, och att ett halvskrivet fält töms när

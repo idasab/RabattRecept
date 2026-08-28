@@ -1,13 +1,13 @@
 import { addExclusion, isExcluded, removeExclusion, withoutExcluded } from './food-exclusions';
 import { Offer } from './offers.models';
 
-function offer(heading: string): Offer {
+function offer(heading: string, description = ''): Offer {
   return {
     id: heading,
     chainId: 'a',
     chainName: 'Willys',
     heading,
-    description: '',
+    description,
     price: 20,
     prePrice: null,
     currency: 'SEK',
@@ -59,6 +59,27 @@ describe('isExcluded', () => {
 
   it('bryr sig inte om ordföljden i frasen', () => {
     expect(isExcluded(offer('Kycklingfilé, färsk'), ['färsk kycklingfilé'])).toBeTrue();
+  });
+
+  it('läser färskt och fryst ur beskrivningen, där butiken skriver det', () => {
+    // Riktiga erbjudanden: rubriken säger inget, beskrivningen säger allt.
+    const fryst = offer('KYCKLINGFILÉ', 'IVARS • 2kg • Djupfryst • Jämförpris 54:50 kr/kg');
+    const farsk = offer('KYCKLINGSTEAK', 'Kronfågel. Ursprung Sverige. Ca 900 g. Färsk.');
+
+    expect(isExcluded(farsk, ['färsk kyckling'])).toBeTrue();
+    expect(isExcluded(fryst, ['färsk kyckling'])).toBeFalse();
+  });
+
+  it('fångar djupfryst även när uteslutningen bara säger fryst', () => {
+    const fryst = offer('KYCKLINGFILÉ', 'IVARS • 2kg • Djupfryst');
+
+    expect(isExcluded(fryst, ['fryst kyckling'])).toBeTrue();
+  });
+
+  it('räknar kyld som sitt eget ord', () => {
+    const kyld = offer('Färsk kycklingfilé', 'Sverige/Guldfågeln. Kyld. Ca 900 g.');
+
+    expect(isExcluded(kyld, ['kyld kyckling'])).toBeTrue();
   });
 
   it('låter en fras vara mer tillåtande än ett ensamt ord', () => {

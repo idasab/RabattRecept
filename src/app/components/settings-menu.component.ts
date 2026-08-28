@@ -55,6 +55,9 @@ import { FormsModule } from '@angular/forms';
           Varor du inte vill laga av. Är fläsk uteslutet föreslås inga rätter som byggs på fläsk,
           hur billigt det än är.
         </p>
+        <p class="lead hint">
+          Flera ord träffar smalare: <em>färsk kyckling</em> lämnar den frysta kvar.
+        </p>
 
         <form class="add" (ngSubmit)="submit()">
           <input
@@ -171,6 +174,15 @@ import { FormsModule } from '@angular/forms';
         margin: 0 0 12px;
         font-size: 13px;
         line-height: 1.4;
+        color: var(--text-muted);
+      }
+
+      .hint {
+        color: var(--text-faint);
+      }
+
+      .hint em {
+        font-style: normal;
         color: var(--text-muted);
       }
 

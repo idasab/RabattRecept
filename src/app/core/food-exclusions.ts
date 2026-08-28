@@ -15,6 +15,13 @@ import { normalizeText } from './text';
  * erbjudandet. Det är skillnaden mellan att välja bort en råvara och att välja
  * bort ett visst utförande av den: "kyckling" stoppar all kyckling, medan
  * "färsk kyckling" lämnar den frysta kvar.
+ *
+ * Både rubriken och beskrivningen läses, för det är i beskrivningen butikerna
+ * skriver om varan är färsk, kyld eller djupfryst. Rubriken "KYCKLINGFILÉ"
+ * säger ingenting; beskrivningen "IVARS • 2 kg • Djupfryst" säger allt. Priset
+ * för det är att beskrivningen också nämner sådant som inte är varan — märke,
+ * ursprung, jämförpris — så en uteslutning kan träffa bredare än man tänkt.
+ * Att utesluta för mycket är dock det säkra felet när skälet är en allergi.
  */
 
 /** Sant när erbjudandet gäller något användaren har uteslutit. */
@@ -23,7 +30,7 @@ export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
     return false;
   }
 
-  const words = wordsOf(offer.heading);
+  const words = [...wordsOf(offer.heading), ...wordsOf(offer.description)];
   const ingredient = mainIngredientFor(offer.heading);
   if (ingredient) {
     words.push(...wordsOf(ingredient));
