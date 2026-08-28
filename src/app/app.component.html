@@ -123,8 +123,8 @@
   <section class="recipes-head" *ngIf="board()">
     <h2 class="card-heading">Recept på det som är billigt</h2>
     <p class="lead">
-      Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg hos Tasteline från
-      minst {{ minVotes }} röster. Klicka för att öppna receptet.
+      Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg från minst
+      {{ minVotes }} röster. Klicka för att öppna receptet hos källan.
     </p>
   </section>
 
@@ -164,7 +164,7 @@
   <p class="loading" *ngIf="loading() && !board()">Hämtar erbjudanden …</p>
 
   <footer class="foot" *ngIf="board()">
-    Erbjudanden från butikernas reklamblad via Tjek, recept och betyg från Tasteline. Priser och
-    giltighet kan skilja sig åt mellan butiker i samma kedja.
+    Erbjudanden från butikernas reklamblad via Tjek, recept och betyg från Tasteline och Zeta.
+    Priser och giltighet kan skilja sig åt mellan butiker i samma kedja.
   </footer>
 </main>

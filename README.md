@@ -18,7 +18,7 @@ men kompilerad och lintad, för den dagen den ska fram igen.
 | Angular | 16.2 | Kravet är `^16.14.0 \|\| >=18.10.0`, alltså öppet uppåt, så det fungerar på Node 20.18.0. Nyare Angular kräver Node 20.19 eller senare och startar inte här. |
 | angular-eslint | 16.3.1 | `ng add` drar annars in v21 med ESLint 9 och flat config, som kräver Angular 20. Versionen är låst så att `npm install` inte glider iväg. |
 | Erbjudanden | Tjek (`squid-api.tjek.com/v2`) | Samma källa som ereklamblad.se. Gratis, ingen nyckel, och skickar CORS-huvuden — därför kan telefonen hämta direkt utan mellanserver. |
-| Recept och betyg | Tasteline (`tasteline.com/wp-json/wp/v2`) | Enda svenska receptkällan jag hittade som både har betyg på femgradig skala och svarar med CORS-huvuden. Köket.se har bättre betygsdata men skickar inga CORS-huvuden alls, ICA:s och Arlas recept-API:er svarar inte utan nyckel. |
+| Recept och betyg | Tasteline (`tasteline.com/wp-json/wp/v2`) och Zeta (`zeta.nu/wp-json/wp/v2`) | De två svenska receptkällor jag hittade som både har betyg på femgradig skala och svarar med CORS-huvuden. Se **Receptkällorna** nedan för vad som föll bort och varför. |
 | Ortssökning | Open-Meteo Geocoding | Gratis, ingen nyckel. Används bara när positionen inte går att få. |
 | Ortsnamn från koordinater | BigDataCloud | Gratis utan nyckel för klientanrop. Namnet är trevligt men inte nödvändigt — misslyckas det heter platsen "Din plats". |
 
@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 184 stycken:
+Appen svarar på http://localhost:4200. Testerna, 200 stycken:
 
 ```bash
 npm run test:ci
@@ -78,6 +78,46 @@ npm run lint
    sedan på den redan hämtade listan.
 7. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
    rabatt först, blir söktermer. Fem recept visas åt gången.
+
+## Receptkällorna
+
+Appen hämtar från två sajter samtidigt, och varje receptkort visar vilken det
+kom från. Kraven är att källan ska ha betyg på femgradig skala och svara med
+CORS-huvuden, eftersom appen är en ren statisk sida utan mellanserver.
+
+| Källa | Betyg | Tid | Matchning |
+| --- | --- | --- | --- |
+| **Tasteline** | JSON-fält | `totalDuration` i sekunder | Ingredienstaxonomi, sökning på term-id |
+| **Zeta** | HTML-attribut i betygsmarkupen | `zetacompat_time` i minuter | Fritext, verifierad mot receptets ingredienslista |
+
+Zeta saknar taxonomi, så sökningen är fritext på råvarans namn. Fritext träffar
+brett — ett recept som bara nämner kyckling i inledningen kommer med — så varje
+träff kontrolleras mot receptets egen ingredienslista, som lyckligtvis finns
+strukturerad. Zetas betyg ligger som färdig HTML med summorna i attribut
+(`data-total-votes="7" data-total-points="28"` betyder 4,0 av 5), så snittet
+räknas i appen. Ändrar Zeta sin markup slutar betygen att läsas, och recepten
+faller då bort på röstgränsen i stället för att visas med fel betyg.
+
+Zeta är ett varumärke och inte en allmän receptsajt, så urvalet lutar åt
+medelhavsmat och recepten använder ofta deras egna produkter. Det är priset för
+att den är öppen.
+
+Följande källor undersöktes och föll bort:
+
+- **Köket.se** har den bästa betygsdatan av alla — `ratingValue` och
+  `ratingCount` rakt av — men skickar inga CORS-huvuden på någon endpoint.
+  Webbläsaren hämtar sidan men vägrar låta appen läsa svaret. Det skulle kräva
+  en mellanserver, vilket appen medvetet inte har.
+- **ICA, Coop, Arla, Recept.se, Allt om Mat, Godare, Mitt kök, Kokaihop och
+  Santa Maria** har inget öppet API alls.
+- **Matgeek.se** svarar med CORS och kör WP Recipe Maker, men har betygen
+  avstängda (`count: 0`).
+
+En ny källa behöver bara implementera
+[`RecipeSource`](src/app/core/recipe-source.ts): svara på "vilka recept har du
+på de här råvarorna" och tillämpa betygs- och röstgränsen. Sammanslagning,
+sortering och varvning sköts av
+[`RecipesService`](src/app/core/recipes.service.ts).
 
 ## Recepten
 
@@ -134,6 +174,13 @@ recept sammanfaller mer sällan än man tror.
 Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
 skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
 kB för tjugo recept i stället för 7 kB.
+
+Bildanropet är det enda undantaget, och det är avsiktligt. Tastelines
+`media_details` försvinner helt så fort `_fields` används på den endpointen,
+oavsett om man ber om en storlek eller flera, och då återstår bara originalet
+på upp till 2560 px — för en bild som visas i 64 px. Ofiltrerat kostar anropet
+omkring 150 kB för tjugofem bilder men ger miniatyrer på 424 px, vilket sparar
+flera megabyte.
 
 ## Inställningar
 
@@ -256,7 +303,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-184 test i sexton filer:
+200 test i arton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att

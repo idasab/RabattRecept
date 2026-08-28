@@ -12,7 +12,8 @@ function recipe(
   durationMinutes: number | null = 35
 ): Recipe {
   return {
-    id: index,
+    id: `Tasteline:${index}`,
+    source: 'Tasteline',
     title: `Recept ${index}`,
     url: `https://www.tasteline.com/recept/${index}/`,
     rating: 4.25,
@@ -104,6 +105,14 @@ describe('RecipeListComponent', () => {
     expect(card.getAttribute('target')).toBe('_blank');
     // Utan noopener får den öppnade sidan tillgång till appens fönster.
     expect(card.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('visar vilken sajt receptet ligger på', () => {
+    setRecipes(1);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.source')?.textContent).toContain(
+      'Tasteline'
+    );
   });
 
   it('skriver betyget på femgradig skala med antal röster', () => {

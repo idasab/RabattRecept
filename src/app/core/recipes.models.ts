@@ -9,8 +9,13 @@ export interface RecipeMatch {
   currency: string;
 }
 
+/** Sajten receptet kommer från. Visas på kortet, för källorna skiljer sig åt. */
+export type RecipeSourceName = 'Tasteline' | 'Zeta';
+
 export interface Recipe {
-  id: number;
+  /** Källa och id ihop, eftersom sajternas id-serier överlappar. */
+  id: string;
+  source: RecipeSourceName;
   title: string;
   /** Länk till receptsidan hos källan. */
   url: string;

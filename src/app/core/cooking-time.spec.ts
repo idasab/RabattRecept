@@ -3,7 +3,8 @@ import { Recipe } from './recipes.models';
 
 function recipe(id: number, durationMinutes: number | null): Recipe {
   return {
-    id,
+    id: `Tasteline:${id}`,
+    source: 'Tasteline',
     title: `Recept ${id}`,
     url: `https://www.tasteline.com/recept/${id}/`,
     rating: 4.5,
@@ -55,14 +56,15 @@ describe('withinCookingTime', () => {
   it('visar bara det ikryssade spannet', () => {
     const recipes = [recipe(1, 15), recipe(2, 45), recipe(3, 120)];
 
-    expect(withinCookingTime(recipes, new Set(['lagom'])).map((r) => r.id)).toEqual([2]);
+    expect(withinCookingTime(recipes, new Set(['lagom'])).map((r) => r.title)).toEqual(['Recept 2']);
   });
 
   it('kan visa flera spann samtidigt', () => {
     const recipes = [recipe(1, 15), recipe(2, 45), recipe(3, 120)];
 
-    expect(withinCookingTime(recipes, new Set(['snabbt', 'långkok'])).map((r) => r.id)).toEqual([
-      1, 3,
+    expect(withinCookingTime(recipes, new Set(['snabbt', 'långkok'])).map((r) => r.title)).toEqual([
+      'Recept 1',
+      'Recept 3',
     ]);
   });
 
@@ -70,7 +72,7 @@ describe('withinCookingTime', () => {
     // Att lägga dem i ett spann vore att lova en tid källan inte anger.
     const recipes = [recipe(1, 15), recipe(2, null)];
 
-    expect(withinCookingTime(recipes, new Set(['snabbt'])).map((r) => r.id)).toEqual([1]);
+    expect(withinCookingTime(recipes, new Set(['snabbt'])).map((r) => r.title)).toEqual(['Recept 1']);
   });
 
   it('visar inget när inget spann är ikryssat', () => {
@@ -82,6 +84,6 @@ describe('withinCookingTime', () => {
   it('behåller ordningen', () => {
     const recipes = [recipe(3, 120), recipe(1, 15), recipe(2, 45)];
 
-    expect(withinCookingTime(recipes, ALLA).map((r) => r.id)).toEqual([3, 1, 2]);
+    expect(withinCookingTime(recipes, ALLA).map((r) => r.title)).toEqual(['Recept 3', 'Recept 1', 'Recept 2']);
   });
 });

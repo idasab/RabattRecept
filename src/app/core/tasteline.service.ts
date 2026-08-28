@@ -62,7 +62,35 @@ export interface TastelineRecipe {
 export interface TastelineMedia {
   id: number;
   source_url: string;
-  media_details?: { sizes?: { medium?: { source_url?: string } } };
+  media_details?: {
+    sizes?: Partial<Record<MediaSize, { source_url?: string }>>;
+  };
+}
+
+/**
+ * Bildstorlekarna vi vill ha, minst först. Kortet visar bilden i 64 px, och
+ * originalen är upp till 2560 px breda — att ta originalet när en miniatyr
+ * finns är dyrt på mobildata, och det gäller varje recept i listan.
+ *
+ * Storlekarna går inte att plocka ut med _fields: API:et släpper hela
+ * media_details så fort fältet filtreras, oavsett om man ber om en storlek
+ * eller flera. Bildanropet görs därför ofiltrerat. Det kostar ungefär 150 kB
+ * för tjugofem bilder, mot flera megabyte om varje bild hämtas i originalstorlek.
+ */
+type MediaSize = 'thumbnail' | 'medium' | 'medium_large' | 'large';
+
+const MEDIA_SIZES: readonly MediaSize[] = ['thumbnail', 'medium', 'medium_large', 'large'];
+
+/** Den minsta tillgängliga varianten, eller originalet när ingen finns. */
+function smallestOf(item: TastelineMedia): string | null {
+  for (const size of MEDIA_SIZES) {
+    const url = item.media_details?.sizes?.[size]?.source_url;
+    if (url) {
+      return url;
+    }
+  }
+
+  return item.source_url ?? null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -116,7 +144,6 @@ export class TastelineService {
       fromObject: {
         include: attachmentIds.join(','),
         per_page: Math.min(attachmentIds.length, 100),
-        _fields: 'id,source_url,media_details.sizes.medium.source_url',
       },
     });
 
@@ -124,7 +151,7 @@ export class TastelineService {
       map((media) => {
         const urls = new Map<number, string>();
         for (const item of media) {
-          const url = item.media_details?.sizes?.medium?.source_url ?? item.source_url;
+          const url = smallestOf(item);
           if (url) {
             urls.set(item.id, url);
           }

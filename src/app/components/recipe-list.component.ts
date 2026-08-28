@@ -45,15 +45,18 @@ const RATING = new Intl.NumberFormat('sv-SE', {
           <span class="body">
             <span class="title">{{ recipe.title }}</span>
             <span class="rating">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 3.6l2.5 5.06 5.6.81-4.05 3.94.96 5.57L12 16.35l-5.01 2.63.96-5.57L3.9 9.47l5.6-.81z"
-                  fill="currentColor"
-                />
-              </svg>
-              {{ rating(recipe) }}
+              <span class="score">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 3.6l2.5 5.06 5.6.81-4.05 3.94.96 5.57L12 16.35l-5.01 2.63.96-5.57L3.9 9.47l5.6-.81z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {{ rating(recipe) }}
+              </span>
               <span class="votes">{{ votes(recipe) }}</span>
-              <span class="duration" *ngIf="duration(recipe) as time">· {{ time }}</span>
+              <span class="duration" *ngIf="duration(recipe) as time">{{ time }}</span>
+              <span class="source">{{ recipe.source }}</span>
             </span>
             <span class="matches">
               <span class="match" *ngFor="let match of shownMatches(recipe)">
@@ -129,13 +132,29 @@ const RATING = new Intl.NumberFormat('sv-SE', {
         line-height: 1.3;
       }
 
+      /* Raden får radbryta i stället för att pressa ihop varje del till en
+         smal kolumn. Delarna hålls därför ihop var för sig. */
       .rating {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 5px;
+        gap: 2px 8px;
         font-size: 13px;
         font-variant-numeric: tabular-nums;
         color: var(--text-muted);
+      }
+
+      .score,
+      .votes,
+      .duration,
+      .source {
+        white-space: nowrap;
+      }
+
+      .score {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
       }
 
       .rating svg {
@@ -146,6 +165,17 @@ const RATING = new Intl.NumberFormat('sv-SE', {
 
       .votes,
       .duration {
+        color: var(--text-faint);
+      }
+
+      /* Vilken sajt receptet ligger på. Källorna skiljer sig i stil och
+         urval, så det är värt att veta innan man klickar. */
+      .source {
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: var(--surface-soft);
+        font-size: 10.5px;
+        letter-spacing: 0.3px;
         color: var(--text-faint);
       }
 
@@ -260,7 +290,7 @@ export class RecipeListComponent implements OnChanges {
     return formatPrice(match.price, match.currency);
   }
 
-  trackById(_index: number, recipe: Recipe): number {
+  trackById(_index: number, recipe: Recipe): string {
     return recipe.id;
   }
 }
