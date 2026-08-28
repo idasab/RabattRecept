@@ -154,7 +154,9 @@ const RATING = new Intl.NumberFormat('sv-SE', {
       .title {
         font-family: var(--font-label);
         font-size: 16px;
-        font-weight: 700;
+        /* Commissioner är en variabel font, så vikten behöver inte hoppa i
+           hundrasteg. 560 ger en titel som håller ihop utan att bli tung. */
+        font-weight: 560;
         line-height: 1.25;
         /* Commissioner är redan smal, så den negativa spärren som passade
            systemfonten gör den trång här. */
