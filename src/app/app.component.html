@@ -113,6 +113,13 @@
     (clear)="clearChains()"
   ></app-chain-filter>
 
+  <app-cooking-time-filter
+    *ngIf="recipes().length"
+    [selected]="cookingTimes()"
+    [counts]="cookingTimeCounts()"
+    (toggle)="toggleCookingTime($event)"
+  ></app-cooking-time-filter>
+
   <section class="recipes-head" *ngIf="board()">
     <h2 class="card-heading">Recept på det som är billigt</h2>
     <p class="lead">
@@ -125,11 +132,18 @@
     {{ message }}
   </p>
 
-  <p class="sr-only" role="status">{{ recipes().length }} recept hittade</p>
+  <p class="sr-only" role="status">{{ visibleRecipes().length }} recept visas</p>
 
-  <app-recipe-list *ngIf="recipes().length" [recipes]="recipes()"></app-recipe-list>
+  <app-recipe-list
+    *ngIf="visibleRecipes().length"
+    [recipes]="visibleRecipes()"
+  ></app-recipe-list>
 
   <p class="empty" *ngIf="recipesLoading() && !recipes().length">Söker recept …</p>
+
+  <p class="empty" *ngIf="recipes().length && !visibleRecipes().length">
+    Inget av de {{ recipes().length }} recepten ryms i de valda tidsspannen. Kryssa i fler.
+  </p>
 
   <p class="empty" *ngIf="board() && !recipesLoading() && !recipes().length && !recipesError()">
     <ng-container *ngIf="!chains().length">

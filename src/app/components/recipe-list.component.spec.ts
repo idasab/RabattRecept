@@ -6,13 +6,18 @@ function match(ingredient: string, chainName: string, price: number) {
   return { ingredient, offerHeading: `${ingredient} 1 kg`, chainName, price, currency: 'SEK' };
 }
 
-function recipe(index: number, matches = [match('Nötfärs', 'Willys', 99)]): Recipe {
+function recipe(
+  index: number,
+  matches = [match('Nötfärs', 'Willys', 99)],
+  durationMinutes: number | null = 35
+): Recipe {
   return {
     id: index,
     title: `Recept ${index}`,
     url: `https://www.tasteline.com/recept/${index}/`,
     rating: 4.25,
     votes: index,
+    durationMinutes,
     image: null,
     matches,
   };
@@ -107,6 +112,32 @@ describe('RecipeListComponent', () => {
     const rating = (fixture.nativeElement as HTMLElement).querySelector('.rating');
     expect(rating?.textContent).toContain('4,3 av 5');
     expect(rating?.textContent).toContain('(1 röst)');
+  });
+
+  it('skriver tillagningstiden i minuter', () => {
+    setRecipe([recipe(1, undefined, 35)]);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.duration')?.textContent).toContain(
+      '35 min'
+    );
+  });
+
+  it('skriver längre tider i timmar och minuter', () => {
+    setRecipe([recipe(1, undefined, 90)]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.duration')?.textContent).toContain(
+      '1 h 30 min'
+    );
+
+    setRecipe([recipe(2, undefined, 120)]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.duration')?.textContent).toContain(
+      '2 h'
+    );
+  });
+
+  it('skriver ingen tid alls när receptet saknar den', () => {
+    setRecipe([recipe(1, undefined, null)]);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.duration')).toBeNull();
   });
 
   it('sammanfattar varje rabatterad vara med pris och butik', () => {

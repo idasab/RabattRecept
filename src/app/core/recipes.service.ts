@@ -149,6 +149,9 @@ export class RecipesService {
           url: entry.link,
           rating,
           votes: Number(entry.meta?.tasteline_recipe_data?.recipe?.rating?.votes ?? 0),
+          durationMinutes: toMinutes(
+            entry.meta?.tasteline_recipe_data?.recipe?.totalDuration
+          ),
           image: null,
           matches: [...sources.values()].map((source) => ({
             ingredient: source.ingredient,
@@ -276,6 +279,18 @@ function rankTerm(termName: string, search: string): number {
   }
 
   return 0;
+}
+
+/**
+ * Tillagningstiden i hela minuter. Källan anger den i sekunder och skriver 0
+ * när receptet saknar tid — noll minuter vore en lögn, så det blir null.
+ */
+function toMinutes(seconds: number | undefined): number | null {
+  if (!seconds || seconds <= 0) {
+    return null;
+  }
+
+  return Math.round(seconds / 60);
 }
 
 /** WordPress skickar rubriker med HTML-entiteter, t.ex. &#8211; för tankstreck. */

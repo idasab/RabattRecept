@@ -17,6 +17,8 @@ export interface Recipe {
   /** Betyg på femgradig skala. */
   rating: number;
   votes: number;
+  /** Tillagningstid i minuter, eller null när receptet inte anger någon. */
+  durationMinutes: number | null;
   image: string | null;
   /**
    * Alla rabatterade varor receptet använder, i erbjudandenas ordning, alltså

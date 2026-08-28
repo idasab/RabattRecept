@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 161 stycken:
+Appen svarar på http://localhost:4200. Testerna, 183 stycken:
 
 ```bash
 npm run test:ci
@@ -202,6 +202,25 @@ varan — märke, ursprung, jämförpris — så en uteslutning kan träffa bred
 man tänkt. Att utesluta för mycket är dock det säkra felet när skälet är en
 allergi.
 
+## Tid att laga
+
+Mellan kedjorna och recepten står tre kryssrutor på rad: `< 30`, `30–60` och
+`> 60` minuter. Enheten står i rubriken så att rutorna kan hållas korta nog att
+rymmas bredvid varandra på en telefon. Uppläst är de utskrivna — "< 30" säger
+ingenting i en skärmläsare — och varje ruta visar hur många av de hittade
+recepten den rymmer.
+
+Tiden kommer från receptkällans `totalDuration`, som anges i sekunder. Källan
+skriver 0 när receptet saknar tidsuppgift, och noll minuter vore en lögn, så
+det blir null i appen. **Recept utan tid visas bara när alla tre rutorna är
+ikryssade**, alltså när man inte filtrerar på tid alls: att lägga dem i ett
+spann vore att lova en tid källan inte anger, och att alltid dölja dem vore att
+kasta bort recept i onödan.
+
+Gränserna räknas uppåt — 30 minuter hamnar i mittenspannet, inte i det snabba.
+Filtret arbetar på de redan hämtade recepten, så ett kryss syns direkt utan
+nytt anrop.
+
 ## Favoriter
 
 Stjärnan bredvid en kedja gör den till favorit. Favoriter ligger alltid överst
@@ -235,7 +254,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-161 test i fjorton filer:
+183 test i sexton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -279,6 +298,12 @@ Plats, annars är ortssökningen vägen framåt.
   riktiga butikstexter som underlag — "färsk kyckling" stoppar KYCKLINGSTEAK
   men inte den djupfrysta KYCKLINGFILÉ — och att samma vara inte kan läggas
   till två gånger.
+- **[cooking-time.spec.ts](src/app/core/cooking-time.spec.ts)** täcker
+  tidsspannen: att gränserna räknas uppåt, att flera spann kan visas samtidigt,
+  och att recept utan tidsuppgift försvinner så fort man börjar filtrera.
+- **[cooking-time-filter.component.spec.ts](src/app/components/cooking-time-filter.component.spec.ts)**
+  täcker rutan: de korta etiketterna, enheten i rubriken, antalet per spann och
+  att den upplästa etiketten är utskriven.
 - **[origin.spec.ts](src/app/core/origin.spec.ts)** täcker svenskmärkningen,
   vilka råvaror som räknas som kött, att kött utan ursprungsuppgift räknas som
   okänt och inte som svenskt, och att fisk och grönsaker släpps igenom oavsett.

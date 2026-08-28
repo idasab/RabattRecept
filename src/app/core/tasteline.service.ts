@@ -21,6 +21,7 @@ const RECIPE_FIELDS = [
   'link',
   'title.rendered',
   'meta.tasteline_recipe_data.recipe.rating',
+  'meta.tasteline_recipe_data.recipe.totalDuration',
   'meta.tasteline_recipe_data.images',
   'ingredient',
 ].join(',');
@@ -48,7 +49,11 @@ export interface TastelineRecipe {
   ingredient: number[];
   meta?: {
     tasteline_recipe_data?: {
-      recipe?: { rating?: { rating?: number; votes?: number | string } };
+      recipe?: {
+        rating?: { rating?: number; votes?: number | string };
+        /** Tillagningstid i sekunder. 0 när receptet inte anger någon. */
+        totalDuration?: number;
+      };
       images?: Record<string, { attachmentId?: number; order?: number }>;
     };
   };

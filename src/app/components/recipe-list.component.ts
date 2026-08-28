@@ -53,6 +53,7 @@ const RATING = new Intl.NumberFormat('sv-SE', {
               </svg>
               {{ rating(recipe) }}
               <span class="votes">{{ votes(recipe) }}</span>
+              <span class="duration" *ngIf="duration(recipe) as time">· {{ time }}</span>
             </span>
             <span class="matches">
               <span class="match" *ngFor="let match of shownMatches(recipe)">
@@ -143,7 +144,8 @@ const RATING = new Intl.NumberFormat('sv-SE', {
         color: var(--text-faint);
       }
 
-      .votes {
+      .votes,
+      .duration {
         color: var(--text-faint);
       }
 
@@ -226,6 +228,21 @@ export class RecipeListComponent implements OnChanges {
 
   votes(recipe: Recipe): string {
     return recipe.votes === 1 ? '(1 röst)' : `(${recipe.votes} röster)`;
+  }
+
+  /** '35 min' eller '1 h 30 min'. Tom sträng när receptet inte anger någon tid. */
+  duration(recipe: Recipe): string {
+    const minutes = recipe.durationMinutes;
+    if (minutes === null) {
+      return '';
+    }
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+
+    const rest = minutes % 60;
+    const hours = (minutes - rest) / 60;
+    return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
   }
 
   /** Varorna som räknas upp under receptet. */

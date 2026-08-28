@@ -26,7 +26,8 @@ function recipe(
   rating: number,
   votes: number,
   ingredientIds: number[],
-  attachmentId?: number
+  attachmentId?: number,
+  totalDuration = 1800
 ): TastelineRecipe {
   return {
     id,
@@ -35,7 +36,7 @@ function recipe(
     ingredient: ingredientIds,
     meta: {
       tasteline_recipe_data: {
-        recipe: { rating: { rating, votes } },
+        recipe: { rating: { rating, votes }, totalDuration },
         images:
           attachmentId === undefined
             ? {}
@@ -272,6 +273,27 @@ describe('RecipesService', () => {
       // order 0 vinner över order 1, och det bortsållade receptets bild hämtas inte.
       expect(tasteline.askedForImages).toEqual([701]);
       expect(recipes[0].image).toBe('https://exempel.se/lax.jpg');
+      done();
+    });
+  });
+
+  it('räknar om tillagningstiden från sekunder till minuter', (done) => {
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.found = [recipe(1, 'Laxgryta', 4.5, 10, [5], undefined, 2700)];
+
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
+      expect(recipes[0].durationMinutes).toBe(45);
+      done();
+    });
+  });
+
+  it('svarar null på tid när källan skriver noll', (done) => {
+    // Noll minuter vore en lögn; källan menar att tiden saknas.
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.found = [recipe(1, 'Laxgryta', 4.5, 10, [5], undefined, 0)];
+
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
+      expect(recipes[0].durationMinutes).toBeNull();
       done();
     });
   });

@@ -11,9 +11,16 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, firstValueFrom, of, switchMap } from 'rxjs';
 import { ChainFilterComponent } from './components/chain-filter.component';
+import { CookingTimeFilterComponent } from './components/cooking-time-filter.component';
 import { SettingsMenuComponent } from './components/settings-menu.component';
 import { PlaceSearchComponent } from './components/place-search.component';
 import { RecipeListComponent } from './components/recipe-list.component';
+import {
+  COOKING_TIME_BANDS,
+  CookingTimeBand,
+  bandFor,
+  withinCookingTime,
+} from './core/cooking-time';
 import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
 import { GeocodingService } from './core/geocoding.service';
 import { mainIngredientNames } from './core/main-ingredients';
@@ -52,6 +59,8 @@ interface StoredSettings {
   excludedFoods: string[];
   /** Kräv svenskmärkning av kött, chark och fågel. */
   onlySwedishMeat: boolean;
+  /** Tidsspannen som är ikryssade. */
+  cookingTimes: CookingTimeBand[];
   place: Place | null;
 }
 
@@ -61,6 +70,7 @@ interface StoredSettings {
   imports: [
     CommonModule,
     ChainFilterComponent,
+    CookingTimeFilterComponent,
     PlaceSearchComponent,
     RecipeListComponent,
     SettingsMenuComponent,
@@ -100,10 +110,15 @@ export class AppComponent implements OnInit {
   readonly favorites = signal<ReadonlySet<string>>(new Set());
   readonly excludedFoods = signal<readonly string[]>([]);
   readonly onlySwedishMeat = signal(false);
+  /** Alla spann från början: ett tomt filter är inget filter. */
+  readonly cookingTimes = signal<ReadonlySet<CookingTimeBand>>(
+    new Set(COOKING_TIME_BANDS.map((band) => band.id))
+  );
   readonly settingsOpen = signal(false);
 
   @ViewChild('settingsButton') private settingsButton?: ElementRef<HTMLButtonElement>;
 
+  /** Alla recept sökningen gav, före tidsfiltret. */
   readonly recipes = signal<readonly Recipe[]>([]);
   readonly recipesLoading = signal(false);
   readonly recipesError = signal<string | null>(null);
@@ -136,6 +151,23 @@ export class AppComponent implements OnInit {
 
     const allowed = withoutExcluded(fromChains, this.excludedFoods());
     return this.onlySwedishMeat() ? onlySwedishMeat(allowed) : allowed;
+  });
+
+  /** Recepten som visas: de som ryms i de ikryssade tidsspannen. */
+  readonly visibleRecipes = computed(() =>
+    withinCookingTime(this.recipes(), this.cookingTimes())
+  );
+
+  /** Hur många recept varje tidsspann rymmer, som siffra i rutan. */
+  readonly cookingTimeCounts = computed(() => {
+    const counts: Partial<Record<CookingTimeBand, number>> = {};
+    for (const recipe of this.recipes()) {
+      const band = bandFor(recipe);
+      if (band) {
+        counts[band] = (counts[band] ?? 0) + 1;
+      }
+    }
+    return counts;
   });
 
   /** Hur många inställningar som är påslagna, som siffra på kugghjulet. */
@@ -188,6 +220,9 @@ export class AppComponent implements OnInit {
       this.favorites.set(new Set(settings.favorites));
       this.excludedFoods.set(settings.excludedFoods);
       this.onlySwedishMeat.set(settings.onlySwedishMeat);
+      if (settings.cookingTimes.length) {
+        this.cookingTimes.set(new Set(settings.cookingTimes));
+      }
     }
 
     // Det sparade underlaget visas direkt, så att appen har innehåll redan
@@ -300,6 +335,18 @@ export class AppComponent implements OnInit {
     this.requestRecipes();
   }
 
+  /** Tidsfiltret arbetar på redan hämtade recept, så inget nytt anrop behövs. */
+  toggleCookingTime(band: CookingTimeBand): void {
+    const next = new Set(this.cookingTimes());
+    if (next.has(band)) {
+      next.delete(band);
+    } else {
+      next.add(band);
+    }
+    this.cookingTimes.set(next);
+    this.saveSettings();
+  }
+
   chooseSwedishMeat(only: boolean): void {
     this.onlySwedishMeat.set(only);
     this.saveSettings();
@@ -393,6 +440,7 @@ export class AppComponent implements OnInit {
       favorites: [...this.favorites()],
       excludedFoods: [...this.excludedFoods()],
       onlySwedishMeat: this.onlySwedishMeat(),
+      cookingTimes: [...this.cookingTimes()],
       place: this.board()?.place ?? null,
     };
 
@@ -413,6 +461,7 @@ export class AppComponent implements OnInit {
       favorites: stored.favorites ?? [],
       excludedFoods: stored.excludedFoods ?? [],
       onlySwedishMeat: stored.onlySwedishMeat ?? false,
+      cookingTimes: stored.cookingTimes ?? [],
     };
   }
 
