@@ -64,7 +64,9 @@
     *ngIf="chains().length"
     [chains]="chains()"
     [selected]="selected()"
+    [favorites]="favorites()"
     (toggle)="toggleChain($event)"
+    (favorite)="toggleFavorite($event)"
     (selectAll)="selectAllChains()"
     (clear)="clearChains()"
   ></app-chain-filter>
@@ -118,7 +120,8 @@
       Inga matkedjor med erbjudanden hittades inom {{ radiusKm() }} km. Prova ett större avstånd.
     </ng-container>
     <ng-container *ngIf="chains().length && !selected().size">
-      Kryssa i minst en kedja för att se erbjudanden.
+      Kryssa i minst en kedja för att se erbjudanden. Stjärnmärk de kedjor du
+      handlar i, så är de ikryssade nästa gång du öppnar appen.
     </ng-container>
     <ng-container *ngIf="chains().length && selected().size">
       Inget erbjudande matchar sökningen.

@@ -1,11 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { formatDistance } from '../core/format';
 import { Chain } from '../core/offers.models';
 
+/** Hur många kedjor som visas från början, och hur många "Visa fler" lägger till. */
+const STEP = 4;
+
 /**
- * Kedjorna som har erbjudanden i närheten, som en lista att kryssa i. Listan
- * håller ingen egen markering utan får den utifrån, så att valet överlever en
- * ny hämtning och kan sparas mellan besöken.
+ * Kedjorna som har erbjudanden i närheten, som en lista att kryssa i.
+ * Favoriterna ligger överst, resten närmast först. Listan börjar kort och
+ * växer fyra rader i taget — i en storstad finns ett dussin kedjor, och de
+ * flesta handlar i ett par av dem.
+ *
+ * Listan håller varken markering eller favoriter själv utan får dem utifrån,
+ * så att valen överlever en ny hämtning och kan sparas mellan besöken. Att en
+ * kedja är dold betyder alltså inte att den är urkryssad: "Markera alla" och
+ * "Rensa alla" gäller alla kedjor, inte bara de synliga.
  */
 @Component({
   selector: 'app-chain-filter',
@@ -21,7 +31,7 @@ import { Chain } from '../core/offers.models';
       </header>
 
       <ul class="chains">
-        <li *ngFor="let chain of chains; trackBy: trackById">
+        <li *ngFor="let chain of visibleChains; trackBy: trackById">
           <label class="chain">
             <input
               type="checkbox"
@@ -31,10 +41,34 @@ import { Chain } from '../core/offers.models';
             />
             <span class="dot" aria-hidden="true" [style.background]="chain.color"></span>
             <span class="name">{{ chain.name }}</span>
+            <span class="distance">{{ distance(chain) }}</span>
             <span class="count">{{ chain.offerCount }}</span>
           </label>
+
+          <button
+            type="button"
+            class="star"
+            [class.on]="favorites.has(chain.id)"
+            [attr.aria-pressed]="favorites.has(chain.id)"
+            [attr.aria-label]="favoriteLabel(chain)"
+            (click)="favorite.emit(chain.id)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 3.6l2.5 5.06 5.6.81-4.05 3.94.96 5.57L12 16.35l-5.01 2.63.96-5.57L3.9 9.47l5.6-.81z"
+                [attr.fill]="favorites.has(chain.id) ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </li>
       </ul>
+
+      <button *ngIf="remaining" type="button" class="more" (click)="showMore()">
+        Visa fler <span class="remaining">{{ remaining }} kvar</span>
+      </button>
     </section>
   `,
   styles: [
@@ -62,11 +96,19 @@ import { Chain } from '../core/offers.models';
         list-style: none;
       }
 
+      .chains li {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
       .chains li + li {
         border-top: 1px solid var(--border);
       }
 
       .chain {
+        flex: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
         gap: 11px;
@@ -119,34 +161,133 @@ import { Chain } from '../core/offers.models';
         color: var(--text-muted);
       }
 
+      .distance,
       .count {
         flex: none;
         font-size: 13px;
         font-variant-numeric: tabular-nums;
         color: var(--text-faint);
       }
+
+      /* Siffran för antal erbjudanden får en egen kolumn så att raderna
+         linjerar även när avståndet växlar mellan '80 m' och '14 km'. */
+      .count {
+        min-width: 24px;
+        text-align: right;
+      }
+
+      .star {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        margin-left: 2px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        /* Omärkt stjärna ska synas men inte konkurrera med kedjenamnet. */
+        color: var(--text-faint);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .star.on {
+        color: var(--text);
+      }
+
+      .star svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .more {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        width: 100%;
+        min-height: 40px;
+        margin-top: 2px;
+        padding: 0;
+        border: 0;
+        border-top: 1px solid var(--border);
+        background: none;
+        color: var(--accent);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .remaining {
+        color: var(--text-faint);
+      }
     `,
   ],
 })
-export class ChainFilterComponent {
+export class ChainFilterComponent implements OnChanges {
   @Input({ required: true }) chains: readonly Chain[] = [];
   @Input({ required: true }) selected: ReadonlySet<string> = new Set();
+  @Input() favorites: ReadonlySet<string> = new Set();
 
   @Output() readonly toggle = new EventEmitter<string>();
+  @Output() readonly favorite = new EventEmitter<string>();
   @Output() readonly selectAll = new EventEmitter<void>();
   @Output() readonly clear = new EventEmitter<void>();
+
+  private shown = STEP;
+
+  /**
+   * En ny hämtning ger en ny uppsättning kedjor, och då börjar listan om kort.
+   * Bara kedjorna får fälla ihop den: markeringen byts vid varje kryss, och en
+   * lista som slog igen så fort man kryssade i något vore obrukbar.
+   *
+   * Alla favoriter visas alltid, även om de är fler än fyra — en favorit som
+   * ligger gömd bakom "Visa fler" vore inte längre en favorit.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['chains'] || changes['favorites']) {
+      this.shown = Math.max(STEP, this.favoriteCount);
+    }
+  }
+
+  get visibleChains(): readonly Chain[] {
+    return this.chains.slice(0, this.shown);
+  }
+
+  get remaining(): number {
+    return Math.max(0, this.chains.length - this.shown);
+  }
 
   get allSelected(): boolean {
     return this.chains.length > 0 && this.chains.every((chain) => this.selected.has(chain.id));
   }
 
-  /** Etiketten som läses upp: siffran i raden säger inget utan sitt sammanhang. */
+  showMore(): void {
+    this.shown += STEP;
+  }
+
+  distance(chain: Chain): string {
+    return chain.distanceKm === null ? '' : formatDistance(chain.distanceKm);
+  }
+
+  /** Etiketten som läses upp: siffrorna i raden säger inget utan sitt sammanhang. */
   label(chain: Chain): string {
     const offers = chain.offerCount === 1 ? 'erbjudande' : 'erbjudanden';
-    return `${chain.name}, ${chain.offerCount} ${offers}`;
+    const near = chain.distanceKm === null ? '' : `, ${formatDistance(chain.distanceKm)}`;
+    return `${chain.name}${near}, ${chain.offerCount} ${offers}`;
+  }
+
+  favoriteLabel(chain: Chain): string {
+    return this.favorites.has(chain.id)
+      ? `Ta bort ${chain.name} som favorit`
+      : `Gör ${chain.name} till favorit`;
   }
 
   trackById(_index: number, chain: Chain): string {
     return chain.id;
+  }
+
+  private get favoriteCount(): number {
+    return this.chains.filter((chain) => this.favorites.has(chain.id)).length;
   }
 }

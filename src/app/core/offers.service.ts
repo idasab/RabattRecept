@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, forkJoin, map } from 'rxjs';
+import { distanceKm } from './distance';
 import { brandOrder, groceryBrandFor } from './grocery-brands';
 import { Chain, Offer, OfferBoard, Place } from './offers.models';
-import { TjekDealer, TjekOffer, TjekService } from './tjek.service';
+import { TjekDealer, TjekOffer, TjekService, TjekStore } from './tjek.service';
 
 /** Kedjor utan egen färg i källan får appens neutrala ton. */
 const FALLBACK_COLOR = '#6b7f96';
@@ -10,23 +11,27 @@ const FALLBACK_COLOR = '#6b7f96';
 /**
  * Översätter källans erbjudanden till appens form: sållar bort allt som inte
  * är mat, räknar fram rabatten och sammanställer vilka kedjor som finns i
- * närheten. Resten av appen ser bara den här formen.
+ * närheten och hur nära de ligger. Resten av appen ser bara den här formen.
  */
 @Injectable({ providedIn: 'root' })
 export class OffersService {
   private readonly tjek = inject(TjekService);
 
   board(place: Place, radiusKm: number): Observable<OfferBoard> {
-    return this.tjek.offersNear(place, radiusKm * 1000).pipe(
-      map((raw) => {
+    const radiusMeters = radiusKm * 1000;
+
+    return forkJoin({
+      offers: this.tjek.offersNear(place, radiusMeters),
+      stores: this.tjek.storesNear(place, radiusMeters),
+    }).pipe(
+      map(({ offers: raw, stores }) => {
         const grocery = raw.filter((offer) => groceryBrandFor(offer.dealer?.website));
-        const offers = grocery.map((offer) => this.toOffer(offer));
 
         return {
           place,
           radiusKm,
-          chains: this.chainsFrom(grocery),
-          offers,
+          chains: this.chainsFrom(grocery, this.nearestStoreByDealer(place, stores)),
+          offers: grocery.map((offer) => this.toOffer(offer)),
           fetchedAt: new Date().toISOString(),
         };
       })
@@ -54,8 +59,27 @@ export class OffersService {
     };
   }
 
-  /** En rad per butiksformat, sorterad varumärkesvis med flest erbjudanden först. */
-  private chainsFrom(offers: TjekOffer[]): Chain[] {
+  /** Avståndet till varje kedjas närmaste butik, i kilometer. */
+  private nearestStoreByDealer(place: Place, stores: TjekStore[]): Map<string, number> {
+    const nearest = new Map<string, number>();
+
+    for (const store of stores) {
+      if (store.latitude === null || store.longitude === null) {
+        continue;
+      }
+
+      const km = distanceKm(place, { latitude: store.latitude, longitude: store.longitude });
+      const known = nearest.get(store.dealer_id);
+      if (known === undefined || km < known) {
+        nearest.set(store.dealer_id, km);
+      }
+    }
+
+    return nearest;
+  }
+
+  /** En rad per butiksformat, närmast först. */
+  private chainsFrom(offers: TjekOffer[], nearest: Map<string, number>): Chain[] {
     const counts = new Map<string, { dealer: TjekDealer; count: number }>();
 
     for (const offer of offers) {
@@ -75,14 +99,32 @@ export class OffersService {
         color: this.colorOf(dealer),
         logo: dealer.logo,
         offerCount: count,
+        distanceKm: nearest.get(dealer.id) ?? null,
       }))
-      .sort(
-        (a, b) =>
-          brandOrder(a.brand) - brandOrder(b.brand) ||
-          b.offerCount - a.offerCount ||
-          a.name.localeCompare(b.name, 'sv')
-      );
+      .sort(this.byDistance);
   }
+
+  /**
+   * Närmast först. Kedjor utan känd butik hamnar sist i stället för att
+   * räknas som noll kilometer, och sorteras då varumärkesvis som förut.
+   */
+  private byDistance = (a: Chain, b: Chain): number => {
+    if (a.distanceKm !== null && b.distanceKm !== null) {
+      return a.distanceKm - b.distanceKm || a.name.localeCompare(b.name, 'sv');
+    }
+    if (a.distanceKm !== null) {
+      return -1;
+    }
+    if (b.distanceKm !== null) {
+      return 1;
+    }
+
+    return (
+      brandOrder(a.brand) - brandOrder(b.brand) ||
+      b.offerCount - a.offerCount ||
+      a.name.localeCompare(b.name, 'sv')
+    );
+  };
 
   private colorOf(dealer: TjekDealer): string {
     const color = dealer.color?.trim();

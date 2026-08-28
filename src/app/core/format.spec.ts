@@ -1,4 +1,4 @@
-import { formatDiscount, formatPrice, formatValidUntil } from './format';
+import { formatDiscount, formatDistance, formatPrice, formatValidUntil } from './format';
 
 describe('formatPrice', () => {
   it('skriver hela kronor utan decimaler', () => {
@@ -12,6 +12,22 @@ describe('formatPrice', () => {
 
   it('skriver ut andra valutor med sin kod', () => {
     expect(formatPrice(10, 'EUR')).toBe('10 EUR');
+  });
+});
+
+describe('formatDistance', () => {
+  it('skriver meter under en kilometer, avrundat till tiotal', () => {
+    expect(formatDistance(0.084)).toBe('80 m');
+    expect(formatDistance(0.257)).toBe('260 m');
+  });
+
+  it('skriver en decimal upp till en mil', () => {
+    expect(formatDistance(1.24)).toBe('1,2 km');
+    expect(formatDistance(9.95)).toBe('10,0 km');
+  });
+
+  it('skriver hela kilometer på längre avstånd', () => {
+    expect(formatDistance(13.7)).toBe('14 km');
   });
 });
 

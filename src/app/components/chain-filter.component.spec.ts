@@ -1,0 +1,167 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ChainFilterComponent } from './chain-filter.component';
+import { Chain } from '../core/offers.models';
+
+function chain(index: number): Chain {
+  return {
+    id: `k${index}`,
+    name: `Kedja ${index}`,
+    brand: `Kedja ${index}`,
+    color: '#6b7f96',
+    logo: null,
+    offerCount: 10 - index,
+    distanceKm: index * 0.5,
+  };
+}
+
+describe('ChainFilterComponent', () => {
+  let fixture: ComponentFixture<ChainFilterComponent>;
+
+  function setChains(count: number, favorites: string[] = []): void {
+    const chains = Array.from({ length: count }, (_, index) => chain(index));
+    fixture.componentInstance.chains = chains;
+    fixture.componentInstance.selected = new Set(chains.map((entry) => entry.id));
+    fixture.componentInstance.favorites = new Set(favorites);
+    fixture.componentInstance.ngOnChanges({
+      chains: { currentValue: chains, previousValue: [], firstChange: false, isFirstChange: () => false },
+    });
+    fixture.detectChanges();
+  }
+
+  function stars(): HTMLButtonElement[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.star')
+    );
+  }
+
+  function rows(): string[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.chain .name')
+    ).map((element) => element.textContent?.trim() ?? '');
+  }
+
+  function moreButton(): HTMLButtonElement | null {
+    return (fixture.nativeElement as HTMLElement).querySelector('.more');
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [ChainFilterComponent] });
+    fixture = TestBed.createComponent(ChainFilterComponent);
+  });
+
+  it('visar bara de fyra närmaste kedjorna från början', () => {
+    setChains(12);
+
+    expect(rows()).toEqual(['Kedja 0', 'Kedja 1', 'Kedja 2', 'Kedja 3']);
+    expect(moreButton()?.textContent).toContain('8 kvar');
+  });
+
+  it('lägger till fyra kedjor för varje klick på Visa fler', () => {
+    setChains(12);
+
+    moreButton()?.click();
+    fixture.detectChanges();
+    expect(rows().length).toBe(8);
+
+    moreButton()?.click();
+    fixture.detectChanges();
+    expect(rows().length).toBe(12);
+  });
+
+  it('döljer knappen när alla kedjor visas', () => {
+    setChains(12);
+
+    moreButton()?.click();
+    fixture.detectChanges();
+    moreButton()?.click();
+    fixture.detectChanges();
+
+    expect(moreButton()).toBeNull();
+  });
+
+  it('visar ingen knapp när kedjorna får plats direkt', () => {
+    setChains(3);
+
+    expect(rows().length).toBe(3);
+    expect(moreButton()).toBeNull();
+  });
+
+  it('fäller inte ihop listan när markeringen ändras', () => {
+    setChains(12);
+    moreButton()?.click();
+    fixture.detectChanges();
+
+    // Kryss i en ruta ger en ny mängd utifrån, alltså en ny input.
+    fixture.componentInstance.selected = new Set(['k0']);
+    fixture.componentInstance.ngOnChanges({
+      selected: {
+        currentValue: new Set(['k0']),
+        previousValue: new Set(),
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    fixture.detectChanges();
+
+    expect(rows().length).toBe(8);
+  });
+
+  it('börjar om kort när en ny hämtning ger nya kedjor', () => {
+    setChains(12);
+    moreButton()?.click();
+    fixture.detectChanges();
+    expect(rows().length).toBe(8);
+
+    setChains(12);
+
+    expect(rows().length).toBe(4);
+  });
+
+  it('visar alla favoriter även när de är fler än fyra', () => {
+    setChains(12, ['k0', 'k1', 'k2', 'k3', 'k4', 'k5']);
+
+    expect(rows().length).toBe(6);
+    expect(moreButton()?.textContent).toContain('6 kvar');
+  });
+
+  it('markerar stjärnan för favoriter och lämnar övriga omarkerade', () => {
+    setChains(6, ['k2']);
+
+    // En favorit ryms inom de fyra som visas från början.
+    expect(stars().map((star) => star.getAttribute('aria-pressed'))).toEqual([
+      'false',
+      'false',
+      'true',
+      'false',
+    ]);
+  });
+
+  it('skickar vidare vilken kedja stjärnan gäller', () => {
+    setChains(6);
+    const emitted: string[] = [];
+    fixture.componentInstance.favorite.subscribe((id) => emitted.push(id));
+
+    stars()[2].click();
+
+    expect(emitted).toEqual(['k2']);
+  });
+
+  it('beskriver vad stjärnan gör åt båda hållen', () => {
+    setChains(6, ['k1']);
+
+    expect(stars()[0].getAttribute('aria-label')).toBe('Gör Kedja 0 till favorit');
+    expect(stars()[1].getAttribute('aria-label')).toBe('Ta bort Kedja 1 som favorit');
+  });
+
+  it('skriver avståndet i raden och i etiketten', () => {
+    setChains(4);
+
+    const distances = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.chain .distance')
+    ).map((element) => element.textContent?.trim());
+
+    expect(distances[0]).toBe('0 m');
+    expect(distances[2]).toBe('1,0 km');
+    expect(fixture.componentInstance.label(chain(2))).toBe('Kedja 2, 1,0 km, 8 erbjudanden');
+  });
+});

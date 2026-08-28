@@ -28,8 +28,24 @@ const BOARD: OfferBoard = {
   place: PLACE,
   radiusKm: 5,
   chains: [
-    { id: 'willys', name: 'Willys', brand: 'Willys', color: '#e60219', logo: null, offerCount: 1 },
-    { id: 'coop', name: 'Coop', brand: 'Coop', color: '#005537', logo: null, offerCount: 1 },
+    {
+      id: 'willys',
+      name: 'Willys',
+      brand: 'Willys',
+      color: '#e60219',
+      logo: null,
+      offerCount: 1,
+      distanceKm: 0.4,
+    },
+    {
+      id: 'coop',
+      name: 'Coop',
+      brand: 'Coop',
+      color: '#005537',
+      logo: null,
+      offerCount: 1,
+      distanceKm: 1.2,
+    },
   ],
   offers: [offer('1', 'willys', 'Willys'), offer('2', 'coop', 'Coop')],
   fetchedAt: '2026-08-28T07:00:00.000Z',
@@ -74,6 +90,33 @@ describe('AppComponent', () => {
 
   function text(): string {
     return (fixture.nativeElement as HTMLElement).textContent ?? '';
+  }
+
+  function stars(): HTMLButtonElement[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        'app-chain-filter .star'
+      )
+    );
+  }
+
+  function chainNames(): string[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('app-chain-filter .chain .name')
+    ).map((element) => element.textContent?.trim() ?? '');
+  }
+
+  function restart(): Promise<void> {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        { provide: LocationService, useClass: StubLocationService },
+        { provide: GeocodingService, useClass: StubGeocodingService },
+        { provide: OffersService, useClass: StubOffersService },
+      ],
+    });
+    return create();
   }
 
   function checkboxes(): HTMLInputElement[] {
@@ -121,22 +164,67 @@ describe('AppComponent', () => {
     expect(visible[0].chainName).toBe('Coop');
   });
 
-  it('kommer ihåg urvalet till nästa besök', async () => {
+  it('kommer ihåg urvalet till nästa besök när inga favoriter finns', async () => {
     await create();
     checkboxes()[0].click();
 
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      imports: [AppComponent],
-      providers: [
-        { provide: LocationService, useClass: StubLocationService },
-        { provide: GeocodingService, useClass: StubGeocodingService },
-        { provide: OffersService, useClass: StubOffersService },
-      ],
-    });
-    await create();
+    await restart();
 
     expect(checkboxes().map((box) => box.checked)).toEqual([false, true]);
+  });
+
+  it('lyfter favoriten överst och kryssar i den', async () => {
+    await create();
+    expect(chainNames()).toEqual(['Willys', 'Coop']);
+
+    // Stjärnmärk Coop, som ligger sist.
+    stars()[1].click();
+    fixture.detectChanges();
+
+    expect(chainNames()).toEqual(['Coop', 'Willys']);
+    expect(fixture.componentInstance.favorites().has('coop')).toBeTrue();
+    expect(fixture.componentInstance.selected().has('coop')).toBeTrue();
+  });
+
+  it('kryssar i exakt favoriterna vid start, inga andra', async () => {
+    await create();
+    // Allt är ikryssat första besöket, och Coop blir favorit.
+    expect(fixture.componentInstance.selected().size).toBe(2);
+    stars()[1].click();
+
+    await restart();
+
+    expect(chainNames()).toEqual(['Coop', 'Willys']);
+    expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
+    expect(fixture.componentInstance.visible().map((offer) => offer.chainName)).toEqual(['Coop']);
+  });
+
+  it('behåller favoriten men inte ett tillfälligt kryss över en omstart', async () => {
+    await create();
+    stars()[1].click();
+    await restart();
+    expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
+
+    // Willys kryssas i utöver favoriten, alltså bara för det här besöket.
+    checkboxes()[1].click();
+    expect(fixture.componentInstance.selected().size).toBe(2);
+
+    await restart();
+
+    expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
+  });
+
+  it('tar bort favoritmärkningen när stjärnan trycks igen', async () => {
+    await create();
+    stars()[1].click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.favorites().has('coop')).toBeTrue();
+
+    stars()[0].click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.favorites().size).toBe(0);
+    expect(chainNames()).toEqual(['Willys', 'Coop']);
   });
 
   it('erbjuder ortssökning när platsen nekas', async () => {

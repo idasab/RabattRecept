@@ -20,6 +20,13 @@ const PAGE_SIZE = 100;
  */
 const MAX_PAGES = 4;
 
+/**
+ * Butikerna kommer i ungefärlig närhetsordning, så tre sidor räcker för att
+ * hitta den närmaste butiken i varje kedja. Källan blandar in bygg, sport och
+ * kläder, vilket är varför det behövs fler butiker än kedjor.
+ */
+const MAX_STORE_PAGES = 3;
+
 export interface TjekDealer {
   id: string;
   name: string;
@@ -27,6 +34,13 @@ export interface TjekDealer {
   /** Hexfärg utan brädgård, 'e2011a'. */
   color: string | null;
   logo: string | null;
+}
+
+export interface TjekStore {
+  id: string;
+  dealer_id: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface TjekOffer {
@@ -58,12 +72,35 @@ export class TjekService {
     ]).pipe(map((pages) => this.dedupe(pages.flat())));
   }
 
+  /**
+   * Butikerna inom radien. Används bara för att räkna ut hur nära varje kedja
+   * ligger; misslyckas hämtningen får kedjorna stå utan avstånd i stället för
+   * att hela sidan blir ett fel.
+   */
+  storesNear(coordinates: Coordinates, radiusMeters: number): Observable<TjekStore[]> {
+    const pages = Array.from({ length: MAX_STORE_PAGES }, (_, index) =>
+      this.http
+        .get<TjekStore[]>(`${API_BASE}/stores`, {
+          params: this.params(coordinates, radiusMeters, index * PAGE_SIZE),
+        })
+        .pipe(catchError(() => of([] as TjekStore[])))
+    );
+
+    return forkJoin(pages).pipe(map((results) => results.flat()));
+  }
+
   private page(
     coordinates: Coordinates,
     radiusMeters: number,
     offset: number
   ): Observable<TjekOffer[]> {
-    const params = new HttpParams({
+    return this.http.get<TjekOffer[]>(`${API_BASE}/offers`, {
+      params: this.params(coordinates, radiusMeters, offset),
+    });
+  }
+
+  private params(coordinates: Coordinates, radiusMeters: number, offset: number): HttpParams {
+    return new HttpParams({
       fromObject: {
         r_lat: coordinates.latitude,
         r_lng: coordinates.longitude,
@@ -72,8 +109,6 @@ export class TjekService {
         offset,
       },
     });
-
-    return this.http.get<TjekOffer[]>(`${API_BASE}/offers`, { params });
   }
 
   /** Sidorna kan överlappa när katalogen ändras mitt i hämtningen. */

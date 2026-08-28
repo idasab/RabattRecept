@@ -23,6 +23,12 @@ export interface Chain {
   color: string;
   logo: string | null;
   offerCount: number;
+  /**
+   * Fågelvägen till kedjans närmaste butik, i kilometer. Null när ingen butik
+   * hittades inom radien — kedjan kan ha erbjudanden som gäller ett större
+   * område än de butiker källan känner till.
+   */
+  distanceKm: number | null;
 }
 
 export interface Offer {
