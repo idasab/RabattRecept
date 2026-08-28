@@ -184,6 +184,14 @@ flera megabyte.
 
 ## Inställningar
 
+Avståndet väljs med ett reglage. Stegen — 2, 5, 10 och 25 km — är inte jämnt
+fördelade, så reglaget går på index och siffrorna står som skala under. Under
+dragningen ändras bara det som visas; erbjudandena hämtas om först när man
+släpper, annars hade varje steg på vägen blivit ett anrop.
+
+Platsknappen sitter på rubrikraden och är fylld som reglaget, eftersom en
+textlänk bredvid en versalrubrik lätt läses som ännu en rubrik.
+
 Kugghjulet uppe till höger öppnar inställningsmenyn. En **prick** på kugghjulet
 visar att något är påslaget, så att en inställning som ändrar hela receptlistan
 inte kan glömmas bort bakom en stängd meny.

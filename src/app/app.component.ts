@@ -94,6 +94,13 @@ export class AppComponent implements OnInit {
   private firstVisit = true;
 
   readonly radii = RADII;
+
+  /**
+   * Radien man drar fram medan man håller i reglaget, innan den släppts.
+   * Null när ingen drar. Hämtningen väntar tills man släpper — annars skulle
+   * varje steg på vägen bli ett anrop.
+   */
+  private readonly dragged = signal<number | null>(null);
   /** '3,5' — svenskt decimaltecken, inte punkt. */
   readonly minRating = MIN_RATING.toLocaleString('sv-SE');
   readonly minVotes = MIN_VOTES;
@@ -128,6 +135,17 @@ export class AppComponent implements OnInit {
    * Favoriterna först. I övrigt behålls källans ordning, som redan är
    * närmast först — sorteringen är stabil, så oavgjort lämnar raderna i fred.
    */
+  /** Radien som ska visas: den man drar fram, annars den som gäller. */
+  readonly shownRadiusKm = computed(() => this.dragged() ?? this.radiusKm());
+
+  /** Reglagets läge som index i RADII, eftersom stegen inte är jämnt fördelade. */
+  readonly radiusIndex = computed(() => RADII.indexOf(this.shownRadiusKm()));
+
+  /** Hur stor del av reglaget som är ifylld, som procent. */
+  readonly radiusFill = computed(
+    () => `${(this.radiusIndex() / (RADII.length - 1)) * 100}%`
+  );
+
   readonly chains = computed<readonly Chain[]>(() => {
     const favorites = this.favorites();
     const chains = this.board()?.chains ?? [];
@@ -283,6 +301,21 @@ export class AppComponent implements OnInit {
 
   choosePlace(place: Place): void {
     void this.load(place);
+  }
+
+  /** Under dragningen: visa bara det nya värdet, hämta inget. */
+  dragRadius(index: string): void {
+    this.dragged.set(RADII[Number(index)] ?? this.radiusKm());
+  }
+
+  /** När reglaget släpps: nu hämtas erbjudandena om. */
+  commitRadius(): void {
+    const radiusKm = this.dragged();
+    this.dragged.set(null);
+
+    if (radiusKm !== null) {
+      this.chooseRadius(radiusKm);
+    }
   }
 
   chooseRadius(radiusKm: number): void {

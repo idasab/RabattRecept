@@ -377,6 +377,30 @@ describe('AppComponent', () => {
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 
+  it('hämtar om först när avståndsreglaget släpps', async () => {
+    await create();
+    expect(fixture.componentInstance.radiusKm()).toBe(5);
+
+    // Under dragningen ändras bara det som visas.
+    fixture.componentInstance.dragRadius('3');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.shownRadiusKm()).toBe(25);
+    expect(fixture.componentInstance.radiusKm()).toBe(5);
+
+    fixture.componentInstance.commitRadius();
+
+    expect(fixture.componentInstance.radiusKm()).toBe(25);
+  });
+
+  it('visar reglagets läge som avstånd, inte som index', async () => {
+    await create();
+    const slider = element<HTMLInputElement>('#app-radius');
+
+    expect(slider?.value).toBe('1');
+    expect(slider?.getAttribute('aria-valuetext')).toBe('5 kilometer från platsen');
+    expect(element('.radius-head output')?.textContent?.trim()).toBe('5 km');
+  });
+
   it('har en platsknapp på rubrikraden som hämtar positionen', async () => {
     location.result = { latitude: 59, longitude: 18 };
     await create();

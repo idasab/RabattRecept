@@ -98,18 +98,27 @@
 
     <app-place-search (picked)="choosePlace($event)"></app-place-search>
 
-    <div class="place-row">
-      <div class="chips" role="group" aria-label="Avstånd från platsen">
-        <button
-          *ngFor="let km of radii"
-          type="button"
-          class="chip"
-          [class.on]="km === radiusKm()"
-          [attr.aria-pressed]="km === radiusKm()"
-          (click)="chooseRadius(km)"
-        >
-          {{ km }} km
-        </button>
+    <div class="radius" [style.--fyllt]="radiusFill()">
+      <label class="radius-head" for="app-radius">
+        <span>Avstånd</span>
+        <output for="app-radius">{{ shownRadiusKm() }} km</output>
+      </label>
+
+      <input
+        id="app-radius"
+        class="radius-slider"
+        type="range"
+        min="0"
+        [max]="radii.length - 1"
+        step="1"
+        [value]="radiusIndex()"
+        [attr.aria-valuetext]="shownRadiusKm() + ' kilometer från platsen'"
+        (input)="dragRadius($any($event.target).value)"
+        (change)="commitRadius()"
+      />
+
+      <div class="radius-ticks" aria-hidden="true">
+        <span *ngFor="let km of radii" [class.on]="km === shownRadiusKm()">{{ km }}</span>
       </div>
     </div>
   </section>
