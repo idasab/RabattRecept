@@ -73,7 +73,10 @@
 
   <section class="recipes-head" *ngIf="board()">
     <h2 class="card-heading">Recept på det som är billigt</h2>
-    <p class="lead">Minst {{ minRating }} i betyg hos Tasteline. Klicka för att öppna receptet.</p>
+    <p class="lead">
+      Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg hos Tasteline. Klicka
+      för att öppna receptet.
+    </p>
   </section>
 
   <p class="notice" *ngIf="recipesError() as message" role="status">
@@ -95,8 +98,10 @@
       de ikryssade nästa gång du öppnar appen.
     </ng-container>
     <ng-container *ngIf="chains().length && selected().size">
-      Inga recept med minst {{ minRating }} i betyg hittades på veckans rabatterade varor hos de
-      valda kedjorna. Prova att kryssa i fler kedjor.
+      Ingen huvudråvara är nedsatt hos de valda kedjorna den här veckan, eller så når inget av
+      recepten upp till {{ minRating }} i betyg. Appen letar bara recept när själva råvaran är
+      på rea — kött, fisk, kyckling, färs — inte när smöret är det. Prova att kryssa i fler
+      kedjor.
     </ng-container>
   </p>
 

@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 96 stycken:
+Appen svarar på http://localhost:4200. Testerna, 101 stycken:
 
 ```bash
 npm run test:ci
@@ -74,23 +74,34 @@ npm run lint
    erbjudanden. Fyra rader visas från början och "Visa fler" lägger till fyra i
    taget. Erbjudandena hämtas en gång per plats och radie; kryssrutorna arbetar
    sedan på den redan hämtade listan.
-6. **Recepten.** De ikryssade kedjornas erbjudanden, störst rabatt först, blir
-   söktermer. Fem recept visas åt gången.
+6. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
+   rabatt först, blir söktermer. Fem recept visas åt gången.
 
 ## Recepten
 
 Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.service.ts):
 
-1. De tio bäst rabatterade varorna hos de valda kedjorna blir söktermer.
-   Rubrikerna är butikstext — "Svenskt smör", "PEPSI SUITCASE – MAX 2 KÖP/KUND" —
-   så [ingredient-candidates.ts](src/app/core/ingredient-candidates.ts) kapar
-   villkoren och lämnar två gissningar per vara: hela uttrycket och dess sista
-   ord. Sista ordet är med därför att svenska varunamn har huvudordet sist:
-   "svenskt smör" är smör.
-2. Söktermerna slås upp i Tastelines ingredienstaxonomi. **Det är också
-   matfiltret**: källan känner inte igen "toalettpapper" som ingrediens, så
-   varan faller bort av sig själv utan att appen behöver en egen lista över vad
-   som är mat.
+1. **Bara rabatterade huvudråvaror blir söktermer.** En rätt föreslås för att
+   det den byggs kring är nedsatt — kyckling, fläskfilé, köttfärs — inte för
+   att smöret eller grädden i den råkar vara det. Sådana ingredienser finns i
+   nästan varje recept och säger inget om vad man ska laga.
+
+   [main-ingredients.ts](src/app/core/main-ingredients.ts) håller listan över
+   vad som räknas: kött, fisk, fågel, korv, ägg och de vegetariska
+   huvudråvarorna. Matchningen görs per ord och godtar både början och slutet,
+   för svenska varunamn sätter ihop råvaran åt båda hållen — "kycklinglårfilé"
+   börjar med den, "blandfärs" slutar med den. Ordningen i listan avgör vid
+   flera träffar, så falukorv blir Falukorv och inte Korv.
+
+   Att godta ordets början kräver undantag, och de står i samma lista:
+   kaffebönor är inte bönor, korvbröd är inte korv, och "färsk" börjar på
+   "färs" utan att ha med köttfärs att göra. Alla tre har dykt upp i riktiga
+   erbjudanden.
+
+   Varje namn i listan är kontrollerat mot receptkällans ingredienslista och
+   finns där som en egen term. En ny rad bör kontrolleras på samma sätt, annars
+   blir den en sökning som aldrig ger träff.
+2. Söktermerna slås upp i Tastelines ingredienstaxonomi.
 
    Taxonomin är finkornig och sökningen rangordnar dåligt, så urvalet görs i
    appen. Varan måste vara termens **huvudord** — sitta sist och med högst ett
@@ -112,12 +123,9 @@ rubriken vilka av receptets varor som är rabatterade, till vilket pris och i
 vilken butik — upp till tre, resten som ett antal. Samma vara räknas en gång
 även när receptet taggats med flera av dess termer.
 
-I praktiken står det oftast bara en vara per recept. Det beror inte på
-sammanfattningen utan på söktermerna: de tas från de varor som har **störst
-rabatt i procent**, och det är oftare skafferi- och färdigvaror — bakpulver,
-chiliflakes, energidryck, toalettpapper — än råvaror man lagar en måltid av.
-Att i stället vikta på pris skulle ge kött, fisk och ost som söktermer, och
-därmed både fler recept och fler recept som använder flera reavaror.
+Oftast står det en vara per recept, ibland flera. Att det inte blir fler beror
+på att receptkällans ingredienstaxonomi är finkornig: två råvaror i samma
+recept sammanfaller mer sällan än man tror.
 
 Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
 skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
@@ -156,7 +164,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-96 test i tio filer:
+101 test i elva filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -178,10 +186,14 @@ Plats, annars är ortssökningen vägen framåt.
   täcker listan: fyra rader från början, fler när favoriterna är fler, fyra till
   per klick, att knappen försvinner när allt visas, och att en utfälld lista
   varken fälls ihop av ett kryss eller av en ny stjärna.
+- **[main-ingredients.spec.ts](src/app/core/main-ingredients.spec.ts)** täcker
+  vad som räknas som huvudråvara: att råvaran hittas både i början och slutet
+  av ett sammansatt varunamn, att den mer specifika vinner, att undantagen
+  håller kaffebönor och färskost utanför, och — själva poängen — att smör,
+  grädde och bakpulver svarar null.
 - **[ingredient-candidates.spec.ts](src/app/core/ingredient-candidates.spec.ts)**
-  täcker översättningen från butiksrubrik till sökterm: att villkorstexten och
-  förpackningsstorlekarna kapas, att huvudordet plockas ut, och att "2 för 40"
-  inte blir söktermen "för".
+  täcker urvalet av söktermer: att bara huvudråvaror räknas mot gränsen, att
+  samma råvara tas en gång, och att erbjudandenas ordning behålls.
 - **[recipes.service.spec.ts](src/app/core/recipes.service.spec.ts)** täcker
   betygsgränsen, att icke-mat aldrig ens slås upp, termrangordningen med sina
   gränsfall ("smörgåsgurka" är inte smör), att en vara räknas en gång även när

@@ -51,8 +51,10 @@ class StubTastelineService {
   imageUrls = new Map<number, string>();
   askedFor: number[] = [];
   askedForImages: number[] = [];
+  askedForTerms: string[] = [];
 
   ingredientsFor(searches: readonly string[]): Observable<Map<string, TastelineTerm[]>> {
+    this.askedForTerms = [...searches];
     return of(new Map(searches.map((search) => [search, this.terms.get(search) ?? []])));
   }
 
@@ -81,7 +83,7 @@ describe('RecipesService', () => {
   });
 
   it('visar bara recept med minst 3,5 i betyg', (done) => {
-    tasteline.terms.set('nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
+    tasteline.terms.set('Nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
     tasteline.found = [
       recipe(1, 'För lågt betyg', 3.4, 50, [383]),
       recipe(2, 'Precis på gränsen', MIN_RATING, 12, [383]),
@@ -96,14 +98,14 @@ describe('RecipesService', () => {
   });
 
   it('sorterar högsta betyg först och flest röster vid lika betyg', (done) => {
-    tasteline.terms.set('lax', [{ id: 5, name: 'Lax', count: 100 }]);
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [
       recipe(1, 'Fyra, få röster', 4, 3, [5]),
       recipe(2, 'Fyra, många röster', 4, 900, [5]),
       recipe(3, 'Fem', 5, 1, [5]),
     ];
 
-    service.recipesFor([offer('1', 'Lax')]).subscribe((recipes) => {
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
       expect(recipes.map((entry) => entry.title)).toEqual([
         'Fem',
         'Fyra, många röster',
@@ -113,48 +115,33 @@ describe('RecipesService', () => {
     });
   });
 
-  it('sållar bort varor som inte är ingredienser', (done) => {
-    // Källan känner inte igen toalettpapper, alltså blir det ingen sökning.
-    tasteline.terms.set('toalettpapper', []);
+  it('söker bara på rabatterade huvudråvaror', (done) => {
+    tasteline.terms.set('Kyckling', [{ id: 152, name: 'Kyckling', count: 800 }]);
 
-    service.recipesFor([offer('1', 'Toalettpapper')]).subscribe((recipes) => {
+    const offers = [
+      offer('1', 'Svenskt smör'),
+      offer('2', 'Toalettpapper 12-pack'),
+      offer('3', 'Kycklinglårfilé'),
+    ];
+
+    service.recipesFor(offers).subscribe(() => {
+      // Smöret och toalettpappret ska aldrig ens slås upp.
+      expect(tasteline.askedForTerms).toEqual(['Kyckling']);
+      done();
+    });
+  });
+
+  it('svarar tomt när rean inte har någon huvudråvara', (done) => {
+    service.recipesFor([offer('1', 'Svenskt smör'), offer('2', 'Läsk')]).subscribe((recipes) => {
       expect(recipes).toEqual([]);
+      expect(tasteline.askedForTerms).toEqual([]);
       expect(tasteline.askedFor).toEqual([]);
       done();
     });
   });
 
-  it('avvisar termer som är hela fraser snarare än varan', (done) => {
-    // Ordet står sist även i "Vegofärs istället för kyckling", men det är
-    // vegofärs, inte kyckling.
-    tasteline.terms.set('kyckling', [
-      { id: 900, name: 'Vegofärs istället för kyckling', count: 1 },
-      { id: 152, name: 'Kyckling', count: 800 },
-    ]);
-    tasteline.found = [recipe(1, 'Kycklinggryta', 4.2, 10, [152])];
-
-    service.recipesFor([offer('1', 'Kyckling')]).subscribe(() => {
-      expect(tasteline.askedFor).toEqual([152]);
-      done();
-    });
-  });
-
-  it('godtar en variant med ett ord framför varan', (done) => {
-    tasteline.terms.set('smör', [
-      { id: 10, name: 'smörgåsgurka', count: 900 },
-      { id: 20, name: 'saltat smör', count: 40 },
-      { id: 30, name: 'smör', count: 500 },
-    ]);
-    tasteline.found = [];
-
-    service.recipesFor([offer('1', 'Smör')]).subscribe(() => {
-      expect(tasteline.askedFor).toEqual([30, 20]);
-      done();
-    });
-  });
-
   it('sätter den vanligaste av likvärdiga termer först', (done) => {
-    tasteline.terms.set('nötfärs', [
+    tasteline.terms.set('Nötfärs', [
       { id: 4886, name: 'nötfärs, mager', count: 3 },
       { id: 383, name: 'Nötfärs', count: 489 },
     ]);
@@ -166,86 +153,84 @@ describe('RecipesService', () => {
     });
   });
 
-  it('frågar på varans alla dugliga termer, bäst först', (done) => {
-    // Källans taxonomi är finkornig: recept taggas med "gul lök(ar)", inte "lök".
-    tasteline.terms.set('lök', [
-      { id: 100, name: 'bananschalottenlök', count: 22 },
-      { id: 200, name: 'gul lök(ar)', count: 3155 },
-      { id: 1985, name: 'lök', count: 506 },
+  it('frågar på råvarans alla dugliga termer, bäst först', (done) => {
+    tasteline.terms.set('Kyckling', [
+      { id: 900, name: 'Vegofärs istället för kyckling', count: 1 },
+      { id: 300, name: 'grillad kyckling', count: 29 },
+      { id: 152, name: 'Kyckling', count: 800 },
     ]);
     tasteline.found = [];
 
-    service.recipesFor([offer('1', 'Lök')]).subscribe(() => {
-      // Exakt namn först, sedan varan som eget ord. Sammansättningen faller bort.
-      expect(tasteline.askedFor).toEqual([1985, 200]);
+    service.recipesFor([offer('1', 'Kycklinglårfilé')]).subscribe(() => {
+      // Exakt namn först, sedan varianten. Frasen faller bort helt.
+      expect(tasteline.askedFor).toEqual([152, 300]);
       done();
     });
   });
 
   it('avvisar sammansättningar som bara råkar innehålla ordet', (done) => {
-    // "smörgåsgurka" innehåller "smör" men är inte smör.
-    tasteline.terms.set('smör', [
-      { id: 10, name: 'smörgåsgurka', count: 900 },
-      { id: 20, name: 'saltat smör', count: 40 },
+    // "äggulor" innehåller "ägg" men är inte ägg.
+    tasteline.terms.set('Ägg', [
+      { id: 10, name: 'äggulor', count: 900 },
+      { id: 20, name: 'Ägg', count: 4572 },
     ]);
     tasteline.found = [];
 
-    service.recipesFor([offer('1', 'Smör')]).subscribe(() => {
+    service.recipesFor([offer('1', 'Ägg 15-pack')]).subscribe(() => {
       expect(tasteline.askedFor).toEqual([20]);
       done();
     });
   });
 
-  it('räknar en vara en gång även när receptet taggats med flera av dess termer', (done) => {
-    tasteline.terms.set('lök', [
-      { id: 200, name: 'gul lök(ar)', count: 3155 },
-      { id: 1985, name: 'lök', count: 506 },
-    ]);
-    tasteline.found = [recipe(1, 'Löksoppa', 4.5, 10, [200, 1985])];
-
-    service.recipesFor([offer('1', 'Lök', 12)]).subscribe((recipes) => {
-      expect(recipes[0].matches.length).toBe(1);
-      // Namnet är den bäst rangordnade termens, oavsett vilken som träffade.
-      expect(recipes[0].matches[0].ingredient).toBe('lök');
-      done();
-    });
-  });
-
   it('ser igenom böjningen i parentes', (done) => {
-    tasteline.terms.set('gul lök', [{ id: 200, name: 'gul lök(ar)', count: 3155 }]);
+    tasteline.terms.set('Fläskfilé', [{ id: 278, name: 'fläskfilé(er)', count: 278 }]);
     tasteline.found = [];
 
-    service.recipesFor([offer('1', 'Gul lök')]).subscribe(() => {
-      expect(tasteline.askedFor).toEqual([200]);
+    service.recipesFor([offer('1', 'Fläskytterfilé')]).subscribe(() => {
+      expect(tasteline.askedFor).toEqual([278]);
       done();
     });
   });
 
-  it('varvar recepten över varorna i stället för att fylla på med en', (done) => {
-    tasteline.terms.set('blåbär', [{ id: 10, name: 'Blåbär', count: 200 }]);
-    tasteline.terms.set('lax', [{ id: 20, name: 'Lax', count: 100 }]);
+  it('räknar en råvara en gång även när receptet taggats med flera av dess termer', (done) => {
+    tasteline.terms.set('Räkor', [
+      { id: 200, name: 'Räkor', count: 799 },
+      { id: 210, name: 'skalade räkor', count: 33 },
+    ]);
+    tasteline.found = [recipe(1, 'Räksallad', 4.5, 10, [200, 210])];
+
+    service.recipesFor([offer('1', 'STORA RÄKOR I LAKE', 59)]).subscribe((recipes) => {
+      expect(recipes[0].matches.length).toBe(1);
+      expect(recipes[0].matches[0].ingredient).toBe('Räkor');
+      done();
+    });
+  });
+
+  it('varvar recepten över råvarorna i stället för att fylla på med en', (done) => {
+    tasteline.terms.set('Kyckling', [{ id: 10, name: 'Kyckling', count: 800 }]);
+    tasteline.terms.set('Lax', [{ id: 20, name: 'Lax', count: 941 }]);
     tasteline.found = [
-      recipe(1, 'Blåbär 4.9', 4.9, 10, [10]),
-      recipe(2, 'Blåbär 4.8', 4.8, 10, [10]),
-      recipe(3, 'Blåbär 4.7', 4.7, 10, [10]),
+      recipe(1, 'Kyckling 4.9', 4.9, 10, [10]),
+      recipe(2, 'Kyckling 4.8', 4.8, 10, [10]),
+      recipe(3, 'Kyckling 4.7', 4.7, 10, [10]),
       recipe(4, 'Lax 4.6', 4.6, 10, [20]),
       recipe(5, 'Lax 4.5', 4.5, 10, [20]),
     ];
 
-    service.recipesFor([offer('1', 'Blåbär'), offer('2', 'Lax')]).subscribe((recipes) => {
+    service.recipesFor([offer('1', 'Kycklingfilé'), offer('2', 'Laxloin')]).subscribe((recipes) => {
       expect(recipes.map((entry) => entry.title)).toEqual([
-        'Blåbär 4.9',
+        'Kyckling 4.9',
         'Lax 4.6',
-        'Blåbär 4.8',
+        'Kyckling 4.8',
         'Lax 4.5',
-        'Blåbär 4.7',
+        'Kyckling 4.7',
       ]);
       done();
     });
   });
 
-  it('berättar vilken rabatterad vara som gav träffen', (done) => {
-    tasteline.terms.set('nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
+  it('berättar vilken rabatterad råvara som gav träffen', (done) => {
+    tasteline.terms.set('Nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
     tasteline.found = [recipe(1, 'Chili con carne', 4.5, 100, [383])];
 
     service.recipesFor([offer('1', 'Nötfärs', 99)]).subscribe((recipes) => {
@@ -262,30 +247,28 @@ describe('RecipesService', () => {
     });
   });
 
-  it('tar med alla rabatterade varor receptet använder', (done) => {
-    tasteline.terms.set('nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
-    tasteline.terms.set('lök', [{ id: 400, name: 'Lök', count: 900 }]);
-    tasteline.found = [recipe(1, 'Chili con carne', 4.5, 100, [383, 400, 999])];
+  it('tar med alla rabatterade råvaror receptet använder', (done) => {
+    tasteline.terms.set('Nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
+    tasteline.terms.set('Bacon', [{ id: 400, name: 'Bacon', count: 703 }]);
+    tasteline.found = [recipe(1, 'Cheeseburgare med bacon', 4.5, 100, [383, 400, 999])];
 
-    service
-      .recipesFor([offer('1', 'Nötfärs', 99), offer('2', 'Lök', 12)])
-      .subscribe((recipes) => {
-        // 999 är ingen av våra varor och ska inte dyka upp i sammanfattningen.
-        expect(recipes[0].matches.map((entry) => entry.ingredient)).toEqual(['Nötfärs', 'Lök']);
-        expect(recipes[0].matches.map((entry) => entry.price)).toEqual([99, 12]);
-        done();
-      });
+    service.recipesFor([offer('1', 'Nötfärs', 99), offer('2', 'Bacon', 25)]).subscribe((recipes) => {
+      // 999 är ingen av våra råvaror och ska inte dyka upp i sammanfattningen.
+      expect(recipes[0].matches.map((entry) => entry.ingredient)).toEqual(['Nötfärs', 'Bacon']);
+      expect(recipes[0].matches.map((entry) => entry.price)).toEqual([99, 25]);
+      done();
+    });
   });
 
   it('tar receptets förstabild och slår upp bara de bilder som behövs', (done) => {
-    tasteline.terms.set('lax', [{ id: 5, name: 'Lax', count: 100 }]);
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [
       recipe(1, 'Med bild', 4.5, 10, [5], 700),
       recipe(2, 'Bortsållad', 2, 10, [5], 900),
     ];
     tasteline.imageUrls = new Map([[701, 'https://exempel.se/lax.jpg']]);
 
-    service.recipesFor([offer('1', 'Lax')]).subscribe((recipes) => {
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
       // order 0 vinner över order 1, och det bortsållade receptets bild hämtas inte.
       expect(tasteline.askedForImages).toEqual([701]);
       expect(recipes[0].image).toBe('https://exempel.se/lax.jpg');
@@ -294,10 +277,10 @@ describe('RecipesService', () => {
   });
 
   it('avkodar HTML-entiteter i rubriken', (done) => {
-    tasteline.terms.set('lax', [{ id: 5, name: 'Lax', count: 100 }]);
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [recipe(1, 'Lax &#8211; i ugn', 4.5, 10, [5])];
 
-    service.recipesFor([offer('1', 'Lax')]).subscribe((recipes) => {
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
       expect(recipes[0].title).toBe('Lax – i ugn');
       done();
     });

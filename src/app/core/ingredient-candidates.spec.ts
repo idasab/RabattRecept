@@ -1,4 +1,4 @@
-import { candidatesFor, ingredientCandidates } from './ingredient-candidates';
+import { ingredientCandidates } from './ingredient-candidates';
 import { Offer } from './offers.models';
 
 function offer(id: string, heading: string, chainId = 'a'): Offer {
@@ -17,62 +17,29 @@ function offer(id: string, heading: string, chainId = 'a'): Offer {
   };
 }
 
-describe('candidatesFor', () => {
-  it('tar hela varunamnet och dess huvudord', () => {
-    // Huvudordet sitter sist på svenska: "röd paprika" är paprika.
-    expect(candidatesFor('Röd paprika')).toEqual(['röd paprika', 'paprika']);
-  });
-
-  it('faller tillbaka på huvudordet när resten är skyltord', () => {
-    expect(candidatesFor('Svenskt smör')).toEqual(['smör']);
-  });
-
-  it('ger bara en sökterm när varunamnet är ett ord', () => {
-    expect(candidatesFor('Nötfärs')).toEqual(['nötfärs']);
-  });
-
-  it('kapar villkorstexten efter varunamnet', () => {
-    expect(candidatesFor('PEPSI SUITCASE – MAX 2 KÖP/KUND')).toEqual(['pepsi suitcase', 'suitcase']);
-    expect(candidatesFor('Kycklinglårfilé, Sverige/Kronfågel')[0]).toBe('kycklinglårfilé');
-  });
-
-  it('tar bort förpackningsstorlekar', () => {
-    expect(candidatesFor('Läsk 20-pack')).toEqual(['läsk']);
-    expect(candidatesFor('Toapapper 8-pack')).toEqual(['toapapper']);
-  });
-
-  it('tar bort skyltord som inte hör till varan', () => {
-    expect(candidatesFor('Färsk kyckling max 3 köp')).toEqual(['kyckling']);
-  });
-
-  it('kortar ner en hel mening till slutet, där huvudordet sitter', () => {
-    expect(candidatesFor('Stora fina saftiga svenska jordgubbar')[0]).toBe('fina saftiga jordgubbar');
-  });
-
-  it('svarar tomt på rubriker utan användbara ord', () => {
-    // Prisskyltning utan varunamn får inte bli söktermen "för".
-    expect(candidatesFor('2 för 40')).toEqual([]);
-    expect(candidatesFor('')).toEqual([]);
-  });
-
-  it('tar bort småord inne i varunamnet', () => {
-    expect(candidatesFor('Kyckling med curry')).toEqual(['kyckling curry', 'curry']);
-  });
-});
-
 describe('ingredientCandidates', () => {
   it('behåller erbjudandet som gav söktermen', () => {
-    const nötfärs = offer('1', 'Nötfärs');
+    const kyckling = offer('1', 'Kycklinglårfilé');
 
-    const [candidate] = ingredientCandidates([nötfärs], 5);
+    const [candidate] = ingredientCandidates([kyckling], 5);
 
-    expect(candidate.term).toBe('nötfärs');
-    expect(candidate.offer).toBe(nötfärs);
+    expect(candidate.term).toBe('Kyckling');
+    expect(candidate.offer).toBe(kyckling);
   });
 
-  it('tar bort dubbletter och behåller det första erbjudandet', () => {
-    const first = offer('1', 'Nötfärs');
-    const second = offer('2', 'Nötfärs');
+  it('hoppar över allt som inte är en huvudråvara', () => {
+    const offers = [
+      offer('1', 'Svenskt smör'),
+      offer('2', 'Toalettpapper 12-pack'),
+      offer('3', 'Nötfärs'),
+    ];
+
+    expect(ingredientCandidates(offers, 5).map((entry) => entry.term)).toEqual(['Nötfärs']);
+  });
+
+  it('tar samma råvara en gång och behåller det första erbjudandet', () => {
+    const first = offer('1', 'KYCKLINGFILÉ');
+    const second = offer('2', 'Kycklinglårfilé');
 
     const candidates = ingredientCandidates([first, second], 5);
 
@@ -84,14 +51,29 @@ describe('ingredientCandidates', () => {
     const offers = [offer('1', 'Nötfärs'), offer('2', 'Kyckling'), offer('3', 'Lax')];
 
     expect(ingredientCandidates(offers, 2).map((entry) => entry.term)).toEqual([
-      'nötfärs',
-      'kyckling',
+      'Nötfärs',
+      'Kyckling',
     ]);
   });
 
-  it('behåller erbjudandenas ordning, alltså störst rabatt först', () => {
-    const offers = [offer('1', 'Lax'), offer('2', 'Nötfärs')];
+  it('räknar bara huvudråvaror mot gränsen', () => {
+    // Femton smörerbjudanden får inte äta upp utrymmet för de två råvarorna.
+    const offers = [
+      ...Array.from({ length: 15 }, (_, i) => offer(`s${i}`, 'Svenskt smör')),
+      offer('1', 'Högrev'),
+      offer('2', 'Laxloin'),
+    ];
 
-    expect(ingredientCandidates(offers, 5).map((entry) => entry.term)).toEqual(['lax', 'nötfärs']);
+    expect(ingredientCandidates(offers, 3).map((entry) => entry.term)).toEqual(['Högrev', 'Lax']);
+  });
+
+  it('behåller erbjudandenas ordning, alltså störst rabatt först', () => {
+    const offers = [offer('1', 'Laxloin'), offer('2', 'Nötfärs')];
+
+    expect(ingredientCandidates(offers, 5).map((entry) => entry.term)).toEqual(['Lax', 'Nötfärs']);
+  });
+
+  it('svarar tomt när rean inte innehåller någon huvudråvara', () => {
+    expect(ingredientCandidates([offer('1', 'Läsk 20-pack')], 5)).toEqual([]);
   });
 });
