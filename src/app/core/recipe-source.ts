@@ -21,8 +21,19 @@ export const MIN_VOTES = 5;
  */
 export interface RecipeSource {
   readonly name: string;
-  /** Recepten som matchar de rabatterade råvarorna, redan sållade på betyg. */
-  recipesFor(candidates: readonly Candidate[]): Observable<Recipe[]>;
+  /**
+   * Recepten som matchar de rabatterade råvarorna, redan sållade på betyg och
+   * på det användaren uteslutit.
+   *
+   * Uteslutningarna måste hanteras av källan och inte i efterhand, för det är
+   * bara källan som vet vad receptet innehåller. Ett recept som heter
+   * "Laxgryta med saffran" ska bort när saffran är uteslutet, även om det
+   * hittades på laxrean.
+   */
+  recipesFor(
+    candidates: readonly Candidate[],
+    excluded: readonly string[]
+  ): Observable<Recipe[]>;
 }
 
 /** Sant när betyget både är högt nog och vilar på tillräckligt många röster. */

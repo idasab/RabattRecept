@@ -195,7 +195,7 @@ export class AppComponent implements OnInit {
           }
 
           return this.recipeSource
-            .recipesFor(seeds)
+            .recipesFor(seeds, this.excludedFoods())
             .pipe(catchError(() => of<readonly Recipe[] | null>(null)));
         }),
         takeUntilDestroyed()

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of, switchMap } from 'rxjs';
+import { excludedBy } from './food-exclusions';
 import { Candidate } from './ingredient-candidates';
 import { RecipeSource, passesRating } from './recipe-source';
 import { Recipe } from './recipes.models';
@@ -46,21 +47,31 @@ export class TastelineSource implements RecipeSource {
 
   private readonly tasteline = inject(TastelineService);
 
-  recipesFor(candidates: readonly Candidate[]): Observable<Recipe[]> {
+  recipesFor(
+    candidates: readonly Candidate[],
+    excluded: readonly string[] = []
+  ): Observable<Recipe[]> {
     if (!candidates.length) {
       return of([]);
     }
 
-    return this.tasteline.ingredientsFor(candidates.map((candidate) => candidate.term)).pipe(
+    // Råvarorna och uteslutningarna slås upp i samma vända: båda är
+    // ingrediensnamn som ska bli term-id, den ena för att hitta recept och
+    // den andra för att kasta dem.
+    const searches = [...candidates.map((candidate) => candidate.term), ...excluded];
+
+    return this.tasteline.ingredientsFor(searches).pipe(
       switchMap((terms) => {
         const matched = this.matchTerms(candidates, terms);
         if (!matched.size) {
           return of([] as Recipe[]);
         }
 
+        const banned = bannedTerms(excluded, terms);
+
         return this.tasteline
           .recipes([...matched.keys()], RECIPE_LIMIT)
-          .pipe(switchMap((raw) => this.withImages(this.toFound(raw, matched))));
+          .pipe(switchMap((raw) => this.withImages(this.toFound(raw, matched, banned, excluded))));
       })
     );
   }
@@ -112,11 +123,21 @@ export class TastelineSource implements RecipeSource {
    */
   private toFound(
     raw: readonly TastelineRecipe[],
-    matched: Map<number, MatchedCandidate>
+    matched: Map<number, MatchedCandidate>,
+    banned: ReadonlySet<number>,
+    excluded: readonly string[]
   ): Found[] {
     const found: Found[] = [];
 
     for (const entry of raw) {
+      // Uteslutet innehåll känns igen på receptets ingredienstermer, och som
+      // extra nät på rubriken: "Laxgryta med saffran" ska bort när saffran är
+      // uteslutet, även om receptet hittades på laxrean.
+      const carries = (entry.ingredient ?? []).some((id) => banned.has(id));
+      if (carries || excludedBy([entry.title?.rendered ?? ''], excluded)) {
+        continue;
+      }
+
       const score = entry.meta?.tasteline_recipe_data?.recipe?.rating;
       const rating = Number(score?.rating ?? 0);
       const votes = Number(score?.votes ?? 0);
@@ -181,6 +202,34 @@ export class TastelineSource implements RecipeSource {
       )
     );
   }
+}
+
+/**
+ * Termerna som gör att ett recept ska kastas.
+ *
+ * Här tas alla dugliga termer, inte bara de fem bästa som vid matchningen —
+ * att missa en variant betyder att ett uteslutet recept slinker igenom, och
+ * det felet är värre än att kasta ett recept för mycket.
+ *
+ * En uteslutning på flera ord, som "färsk kyckling", ger ingen term alls.
+ * Det är avsiktligt: den säger något om varans skick i butiken, inte att all
+ * kyckling ska bort ur recepten.
+ */
+function bannedTerms(
+  excluded: readonly string[],
+  terms: Map<string, TastelineTerm[]>
+): Set<number> {
+  const banned = new Set<number>();
+
+  for (const entry of excluded) {
+    for (const term of terms.get(entry) ?? []) {
+      if (rankTerm(term.name, entry) >= MIN_TERM_RANK) {
+        banned.add(term.id);
+      }
+    }
+  }
+
+  return banned;
 }
 
 /** Receptets förstabild. Bilderna ligger i en uppslagstabell med ordningsnummer. */

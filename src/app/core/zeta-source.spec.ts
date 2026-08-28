@@ -182,6 +182,31 @@ describe('ZetaSource', () => {
       });
   });
 
+  it('kastar recept som har en utesluten ingrediens i listan', (done) => {
+    zeta.results.set('Lax', [
+      zetaRecipe(1, 'Laxgryta', 10, 45, ['lax', 'saffran', 'fänkål']),
+      zetaRecipe(2, 'Laxpasta', 10, 45, ['lax', 'grädde']),
+    ]);
+
+    source
+      .recipesFor(candidates(['Lax', offer('1', 'Laxloin')]), ['Saffran'])
+      .subscribe((r) => {
+        expect(r.map((entry) => entry.title)).toEqual(['Laxpasta']);
+        done();
+      });
+  });
+
+  it('kastar recept vars rubrik nämner det uteslutna', (done) => {
+    zeta.results.set('Lax', [zetaRecipe(1, 'Laxgryta med saffran', 10, 45, ['lax'])]);
+
+    source
+      .recipesFor(candidates(['Lax', offer('1', 'Laxloin')]), ['saffran'])
+      .subscribe((r) => {
+        expect(r).toEqual([]);
+        done();
+      });
+  });
+
   it('svarar tomt utan råvaror, utan att fråga källan', (done) => {
     source.recipesFor([]).subscribe((r) => {
       expect(r).toEqual([]);

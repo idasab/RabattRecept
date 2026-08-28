@@ -270,6 +270,69 @@ describe('TastelineSource', () => {
     });
   });
 
+  it('kastar recept som innehåller en utesluten ingrediens', (done) => {
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.terms.set('Saffran', [{ id: 77, name: 'Saffran', count: 300 }]);
+    tasteline.found = [
+      recipe(1, 'Laxgryta med saffran', 4.8, 100, [5, 77]),
+      recipe(2, 'Laxgryta med fänkål', 4.7, 100, [5]),
+    ];
+
+    service
+      .recipesFor(candidates(['Lax', offer('1', 'Laxloin')]), ['Saffran'])
+      .subscribe((recipes) => {
+        expect(recipes.map((entry) => entry.title)).toEqual(['Laxgryta med fänkål']);
+        done();
+      });
+  });
+
+  it('tar även bort ett recept som säger sig vara utan det uteslutna', (done) => {
+    // Rubriknätet skiljer inte på "med" och "utan". Att kasta ett recept för
+    // mycket är det säkra felet när skälet kan vara en allergi.
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.terms.set('Saffran', []);
+    tasteline.found = [recipe(1, 'Laxgryta utan saffran', 4.8, 100, [5])];
+
+    service
+      .recipesFor(candidates(['Lax', offer('1', 'Laxloin')]), ['Saffran'])
+      .subscribe((recipes) => {
+        expect(recipes).toEqual([]);
+        done();
+      });
+  });
+
+  it('kastar recept vars rubrik nämner det uteslutna, som extra nät', (done) => {
+    // Källan känner inte alltid igen ordet som ingrediensterm.
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.terms.set('Sriracha', []);
+    tasteline.found = [
+      recipe(1, 'Laxbowl med srirachamajonnäs', 4.8, 100, [5]),
+      recipe(2, 'Laxgryta', 4.7, 100, [5]),
+    ];
+
+    service
+      .recipesFor(candidates(['Lax', offer('1', 'Laxloin')]), ['Sriracha'])
+      .subscribe((recipes) => {
+        expect(recipes.map((entry) => entry.title)).toEqual(['Laxgryta']);
+        done();
+      });
+  });
+
+  it('låter en uteslutning på flera ord gälla varan och inte recepten', (done) => {
+    // "färsk kyckling" säger något om varan i butiken, inte att all kyckling
+    // ska bort ur recepten.
+    tasteline.terms.set('Kyckling', [{ id: 152, name: 'Kyckling', count: 800 }]);
+    tasteline.terms.set('färsk kyckling', [{ id: 152, name: 'Kyckling', count: 800 }]);
+    tasteline.found = [recipe(1, 'Kycklinggryta', 4.8, 100, [152])];
+
+    service
+      .recipesFor(candidates(['Kyckling', offer('1', 'Kycklinglårfilé')]), ['färsk kyckling'])
+      .subscribe((recipes) => {
+        expect(recipes.map((entry) => entry.title)).toEqual(['Kycklinggryta']);
+        done();
+      });
+  });
+
   it('svarar tomt utan erbjudanden, utan att fråga källan', (done) => {
     service.recipesFor([]).subscribe((recipes) => {
       expect(recipes).toEqual([]);

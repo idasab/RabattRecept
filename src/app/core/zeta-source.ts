@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of } from 'rxjs';
+import { excludedBy } from './food-exclusions';
 import { Candidate } from './ingredient-candidates';
 import { RecipeSource, passesRating } from './recipe-source';
 import { Recipe, RecipeMatch } from './recipes.models';
@@ -21,13 +22,16 @@ export class ZetaSource implements RecipeSource {
 
   private readonly zeta = inject(ZetaService);
 
-  recipesFor(candidates: readonly Candidate[]): Observable<Recipe[]> {
+  recipesFor(
+    candidates: readonly Candidate[],
+    excluded: readonly string[] = []
+  ): Observable<Recipe[]> {
     if (!candidates.length) {
       return of([]);
     }
 
     return this.zeta.searchAll(candidates.map((candidate) => candidate.term)).pipe(
-      map((results) => this.toRecipes(candidates, results))
+      map((results) => this.toRecipes(candidates, results, excluded))
     );
   }
 
@@ -37,13 +41,20 @@ export class ZetaSource implements RecipeSource {
    */
   private toRecipes(
     candidates: readonly Candidate[],
-    results: Map<string, ZetaRecipe[]>
+    results: Map<string, ZetaRecipe[]>,
+    excluded: readonly string[]
   ): Recipe[] {
     const byId = new Map<number, { recipe: ZetaRecipe; matches: RecipeMatch[] }>();
 
     for (const candidate of candidates) {
       for (const raw of results.get(candidate.term) ?? []) {
         if (!usesIngredient(raw, candidate.term)) {
+          continue;
+        }
+
+        // Zeta har ingredienslistan, så uteslutningen kan prövas mot vad
+        // receptet faktiskt innehåller och inte bara mot vad det heter.
+        if (excludedBy([raw.title?.rendered ?? '', ...ingredientNamesOf(raw)], excluded)) {
           continue;
         }
 

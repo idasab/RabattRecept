@@ -55,9 +55,11 @@ function recipe(
 class StubSource {
   found: Recipe[] = [];
   asked: Candidate[] = [];
+  askedExcluded: string[] = [];
 
-  recipesFor(candidates: readonly Candidate[]): Observable<Recipe[]> {
+  recipesFor(candidates: readonly Candidate[], excluded: readonly string[]): Observable<Recipe[]> {
     this.asked = [...candidates];
+    this.askedExcluded = [...excluded];
     return of(this.found);
   }
 }
@@ -109,6 +111,15 @@ describe('RecipesService', () => {
       expect(recipes).toEqual([]);
       expect(tasteline.asked).toEqual([]);
       expect(zeta.asked).toEqual([]);
+      done();
+    });
+  });
+
+  it('skickar uteslutningarna vidare till båda källorna', (done) => {
+    // Bara källan vet vad receptet innehåller, så filtret måste göras där.
+    service.recipesFor([offer('1', 'Kycklinglårfilé')], ['Saffran']).subscribe(() => {
+      expect(tasteline.askedExcluded).toEqual(['Saffran']);
+      expect(zeta.askedExcluded).toEqual(['Saffran']);
       done();
     });
   });

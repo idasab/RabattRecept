@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 200 stycken:
+Appen svarar på http://localhost:4200. Testerna, 207 stycken:
 
 ```bash
 npm run test:ci
@@ -220,10 +220,27 @@ Här anger man varor man inte vill ha receptförslag på — för allergier, fö
 för att man tröttnat. Listan sparas mellan besöken och fältet föreslår de
 råvaror appen känner igen.
 
-Uteslutningen görs på **erbjudandet**, inte på receptet. Är fläsk uteslutet
-blir fläskfilén aldrig en sökterm, och inga rätter som byggs på fläsk föreslås.
-Ett recept kan fortfarande innehålla fläsk i en biroll: appen läser inte
-recepten, den väljer bara vad den söker på.
+Uteslutningen gäller **både erbjudandet och receptet**. Är fläsk uteslutet blir
+fläskfilén aldrig en sökterm, och recept som innehåller fläsk kastas även när
+de hittades på något annat. Det senare är nödvändigt: en laxrea kan mycket väl
+ge "Laxgryta med saffran", och den som kryssat ur saffran vill inte se den.
+
+Hur receptets innehåll prövas skiljer sig åt mellan källorna, eftersom de
+lämnar ut olika saker:
+
+- **Tasteline** ger ingredienstermer som id:n, så de uteslutna orden slås upp
+  som termer i samma vända som råvarorna och recept med de term-id:na kastas.
+- **Zeta** ger ingredienslistan i klartext, så den prövas direkt.
+- **Båda** prövas dessutom mot rubriken, som ett extra nät när ordet inte finns
+  som ingrediens.
+
+Rubriknätet skiljer inte på "med" och "utan", så "Laxgryta utan saffran"
+försvinner också. Att kasta ett recept för mycket är det säkra felet när skälet
+kan vara en allergi.
+
+En uteslutning på flera ord gäller bara varan, inte recepten: `färsk kyckling`
+säger något om varans skick i butiken, inte att all kyckling ska bort ur
+matsedeln.
 
 Ett ensamt ord matchar ordets början och slut, precis som råvaruigenkänningen.
 Det gör att "fläsk" fångar både "Fläskytterfilé" och "Bacon/Stekfläsk" — vilket
@@ -303,7 +320,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-200 test i arton filer:
+207 test i arton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att

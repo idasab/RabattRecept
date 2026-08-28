@@ -46,23 +46,27 @@ const SYNONYM_GROUPS = new Map<string, string[]>(
   })
 );
 
-/** Sant när erbjudandet gäller något användaren har uteslutit. */
-export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
+/**
+ * Sant när texterna beskriver något användaren har uteslutit.
+ *
+ * Delas av erbjudandena och recepten, så att "saffran" betyder samma sak
+ * oavsett om ordet står i en butiksrubrik eller i en ingredienslista.
+ */
+export function excludedBy(texts: readonly string[], excluded: readonly string[]): boolean {
   if (!excluded.length) {
     return false;
   }
 
-  const words = [...wordsOf(offer.heading), ...wordsOf(offer.description)];
-  const ingredient = mainIngredientFor(offer.heading);
-  if (ingredient) {
-    words.push(...wordsOf(ingredient));
+  const words = texts.flatMap(wordsOf);
+  if (!words.length) {
+    return false;
   }
 
   return excluded.some((entry) => {
     const needles = wordsOf(entry);
 
-    // Varje ord i uteslutningen måste finnas i erbjudandet. Ordet får sitta i
-    // början eller slutet av ett sammansatt varunamn, precis som när råvaran
+    // Varje ord i uteslutningen måste finnas i texten. Ordet får sitta i
+    // början eller slutet av ett sammansatt namn, precis som när råvaran
     // känns igen: "fläsk" ska stoppa "fläskytterfilé".
     return (
       needles.length > 0 &&
@@ -74,6 +78,13 @@ export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
       )
     );
   });
+}
+
+/** Sant när erbjudandet gäller något användaren har uteslutit. */
+export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
+  const ingredient = mainIngredientFor(offer.heading);
+
+  return excludedBy([offer.heading, offer.description, ingredient ?? ''], excluded);
 }
 
 /** Erbjudandena som får ligga till grund för receptsökningen. */

@@ -30,15 +30,15 @@ export class RecipesService {
     inject(ZetaSource),
   ];
 
-  recipesFor(offers: readonly Offer[]): Observable<Recipe[]> {
+  recipesFor(offers: readonly Offer[], excluded: readonly string[] = []): Observable<Recipe[]> {
     const candidates = ingredientCandidates(offers, MAX_CANDIDATES);
     if (!candidates.length) {
       return of([]);
     }
 
-    return forkJoin(this.sources.map((source) => source.recipesFor(candidates))).pipe(
-      map((results) => this.merge(results.flat()))
-    );
+    return forkJoin(
+      this.sources.map((source) => source.recipesFor(candidates, excluded))
+    ).pipe(map((results) => this.merge(results.flat())));
   }
 
   /**
