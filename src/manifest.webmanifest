@@ -1,7 +1,7 @@
 {
   "name": "Rabatter nära dig",
   "short_name": "Rabatter",
-  "description": "Veckans matvarurabatter från kedjorna närmast dig, med kedjorna som en lista att kryssa i.",
+  "description": "Recept på veckans rabatterade varor från matkedjorna närmast dig.",
   "lang": "sv",
   "start_url": ".",
   "display": "standalone",

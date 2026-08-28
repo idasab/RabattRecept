@@ -138,47 +138,14 @@ h1 {
   color: var(--bg);
 }
 
-.find {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 0 4px;
+.recipes-head {
+  margin: 6px 4px 0;
 }
 
-.field {
-  flex: 1 1 180px;
-  display: flex;
-  align-items: center;
-  padding: 9px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  transition: border-color 160ms ease;
-}
-
-.field:focus-within {
-  border-color: var(--text-faint);
-}
-
-.field input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-size: 14px;
-  outline: none;
-  -webkit-appearance: none;
-}
-
-.field input::placeholder {
-  color: var(--text-faint);
-}
-
-.field input::-webkit-search-cancel-button {
-  display: none;
+.lead {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .empty,

@@ -1,15 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, catchError, debounceTime, firstValueFrom, of, switchMap } from 'rxjs';
 import { ChainFilterComponent } from './components/chain-filter.component';
-import { OfferListComponent } from './components/offer-list.component';
 import { PlaceSearchComponent } from './components/place-search.component';
+import { RecipeListComponent } from './components/recipe-list.component';
 import { GeocodingService } from './core/geocoding.service';
 import { LocationError, LocationService } from './core/location.service';
-import { OfferSort, filterOffers } from './core/offer-filter';
-import { Chain, OfferBoard, Place } from './core/offers.models';
+import { filterOffers } from './core/offer-filter';
+import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
+import { Recipe } from './core/recipes.models';
+import { MIN_RATING, RecipesService } from './core/recipes.service';
 
 /**
  * Versionen i nycklarna gör att sparat från en äldre datamodell ignoreras.
@@ -22,9 +24,14 @@ const BOARD_KEY = 'rabatt-recept.board.v1';
 /** Avstånden man kan välja mellan, i kilometer. */
 const RADII = [2, 5, 10, 25];
 
+/**
+ * Hur länge kryssandet får pågå innan recepten hämtas om. Att kryssa i tre
+ * kedjor efter varandra ska ge en sökning, inte tre.
+ */
+const RECIPE_DEBOUNCE_MS = 400;
+
 interface StoredSettings {
   radiusKm: number;
-  sort: OfferSort;
   /** Kedjorna som är ikryssade. */
   selected: string[];
   /** Kedjorna som stjärnmärkts: alltid överst och alltid ikryssade vid start. */
@@ -35,13 +42,7 @@ interface StoredSettings {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ChainFilterComponent,
-    OfferListComponent,
-    PlaceSearchComponent,
-  ],
+  imports: [CommonModule, ChainFilterComponent, PlaceSearchComponent, RecipeListComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -49,6 +50,9 @@ export class AppComponent implements OnInit {
   private readonly offers = inject(OffersService);
   private readonly location = inject(LocationService);
   private readonly geocoding = inject(GeocodingService);
+  private readonly recipeSource = inject(RecipesService);
+
+  private readonly recipeRequests = new Subject<void>();
 
   /**
    * Sant tills appen vet vad användaren brukar välja. Först då, och bara då,
@@ -58,6 +62,8 @@ export class AppComponent implements OnInit {
   private firstVisit = true;
 
   readonly radii = RADII;
+  /** '3,5' — svenskt decimaltecken, inte punkt. */
+  readonly minRating = MIN_RATING.toLocaleString('sv-SE');
 
   readonly board = signal<OfferBoard | null>(null);
   readonly loading = signal(false);
@@ -66,10 +72,12 @@ export class AppComponent implements OnInit {
   readonly canSearchInstead = signal(false);
 
   readonly radiusKm = signal(5);
-  readonly sort = signal<OfferSort>('discount');
-  readonly query = signal('');
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly favorites = signal<ReadonlySet<string>>(new Set());
+
+  readonly recipes = signal<readonly Recipe[]>([]);
+  readonly recipesLoading = signal(false);
+  readonly recipesError = signal<string | null>(null);
 
   /**
    * Favoriterna först. I övrigt behålls källans ordning, som redan är
@@ -84,17 +92,18 @@ export class AppComponent implements OnInit {
     );
   });
 
-  readonly visible = computed(() =>
+  /**
+   * Erbjudandena från de ikryssade kedjorna, störst rabatt först. De visas
+   * inte längre utan ligger bakom recepten: det är de här varorna som är
+   * söktermerna. Störst rabatt först är därför inte pynt utan urvalsordning —
+   * det är de varorna det är värt att laga mat av.
+   */
+  readonly selectedOffers = computed<readonly Offer[]>(() =>
     filterOffers(this.board()?.offers ?? [], {
       chainIds: this.selected(),
-      query: this.query(),
-      sort: this.sort(),
+      query: '',
+      sort: 'discount',
     })
-  );
-
-  /** Kedjefärg per id, så att erbjudandelistan kan visa samma prick som filtret. */
-  readonly chainColors = computed(() =>
-    Object.fromEntries(this.chains().map((chain) => [chain.id, chain.color]))
   );
 
   readonly fetchedLabel = computed(() => {
@@ -105,12 +114,39 @@ export class AppComponent implements OnInit {
     return new Date(at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
   });
 
+  constructor() {
+    this.recipeRequests
+      .pipe(
+        debounceTime(RECIPE_DEBOUNCE_MS),
+        switchMap(() => {
+          const seeds = this.selectedOffers();
+          if (!seeds.length) {
+            return of<readonly Recipe[] | null>([]);
+          }
+
+          return this.recipeSource
+            .recipesFor(seeds)
+            .pipe(catchError(() => of<readonly Recipe[] | null>(null)));
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((recipes) => {
+        this.recipesLoading.set(false);
+
+        if (recipes === null) {
+          this.recipesError.set('Recepten kunde inte hämtas just nu. Försök igen om en stund.');
+          return;
+        }
+
+        this.recipes.set(recipes);
+      });
+  }
+
   async ngOnInit(): Promise<void> {
     const settings = this.readSettings();
     if (settings) {
       this.firstVisit = false;
       this.radiusKm.set(settings.radiusKm);
-      this.sort.set(settings.sort);
       this.selected.set(new Set(settings.selected));
       this.favorites.set(new Set(settings.favorites));
     }
@@ -121,6 +157,7 @@ export class AppComponent implements OnInit {
     if (cached) {
       this.board.set(cached);
       this.reconcile(cached.chains);
+      this.requestRecipes();
     }
 
     const place = settings?.place ?? cached?.place ?? null;
@@ -186,6 +223,7 @@ export class AppComponent implements OnInit {
     }
     this.selected.set(next);
     this.saveSettings();
+    this.requestRecipes();
   }
 
   /** Stjärnan flyttar kedjan överst. Att märka en kedja kryssar också i den. */
@@ -199,6 +237,7 @@ export class AppComponent implements OnInit {
       const selected = new Set(this.selected());
       selected.add(id);
       this.selected.set(selected);
+      this.requestRecipes();
     }
 
     this.favorites.set(favorites);
@@ -208,16 +247,13 @@ export class AppComponent implements OnInit {
   selectAllChains(): void {
     this.selected.set(new Set(this.chains().map((chain) => chain.id)));
     this.saveSettings();
+    this.requestRecipes();
   }
 
   clearChains(): void {
     this.selected.set(new Set());
     this.saveSettings();
-  }
-
-  chooseSort(sort: OfferSort): void {
-    this.sort.set(sort);
-    this.saveSettings();
+    this.requestRecipes();
   }
 
   private async load(place: Place): Promise<void> {
@@ -231,15 +267,23 @@ export class AppComponent implements OnInit {
       this.reconcile(board.chains);
       this.saveBoard(board);
       this.saveSettings();
+      this.requestRecipes();
     } catch {
       this.error.set(
         this.board()
-          ? 'Erbjudandena kunde inte uppdateras. Listan nedan är den senast hämtade.'
+          ? 'Erbjudandena kunde inte uppdateras. Recepten nedan bygger på den senast hämtade rean.'
           : 'Erbjudandena kunde inte hämtas. Kontrollera uppkopplingen och försök igen.'
       );
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Ber om nya recept. Själva anropet väntar in att kryssandet lugnat sig. */
+  private requestRecipes(): void {
+    this.recipesLoading.set(true);
+    this.recipesError.set(null);
+    this.recipeRequests.next();
   }
 
   /**
@@ -277,7 +321,6 @@ export class AppComponent implements OnInit {
 
     const settings: StoredSettings = {
       radiusKm: this.radiusKm(),
-      sort: this.sort(),
       selected: [...this.selected()],
       favorites: [...this.favorites()],
       place: this.board()?.place ?? null,

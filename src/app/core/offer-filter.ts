@@ -1,4 +1,5 @@
 import { Offer } from './offers.models';
+import { normalizeText } from './text';
 
 export type OfferSort = 'discount' | 'price';
 
@@ -16,7 +17,7 @@ export interface OfferFilter {
  * att en ändrad kryssruta syns direkt utan nytt nätverksanrop.
  */
 export function filterOffers(offers: readonly Offer[], filter: OfferFilter): Offer[] {
-  const needle = normalize(filter.query);
+  const needle = normalizeText(filter.query);
 
   const matching = offers.filter(
     (offer) =>
@@ -38,14 +39,5 @@ function comparatorFor(sort: OfferSort): (a: Offer, b: Offer) => number {
 }
 
 function haystackOf(offer: Offer): string {
-  return normalize(`${offer.heading} ${offer.description} ${offer.chainName}`);
-}
-
-/** Gemener och utan diakriter, så att "kott" hittar "kött". */
-function normalize(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return normalizeText(`${offer.heading} ${offer.description} ${offer.chainName}`);
 }

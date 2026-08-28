@@ -1,8 +1,15 @@
 # Rabatter nära dig
 
-Webbapp som hämtar veckans matvaruerbjudanden från butikerna närmast dig och
-listar kedjorna som en lista att kryssa i. Byggd för att sparas på hemskärmen på
-en iPhone, men fungerar lika bra i en vanlig webbläsare.
+Webbapp som svarar på vad man kan laga av veckans rea. Den hämtar
+matvaruerbjudandena från butikerna närmast dig, låter dig kryssa i vilka kedjor
+du handlar i, och föreslår recept på de varor som är nedsatta. Byggd för att
+sparas på hemskärmen på en iPhone, men fungerar lika bra i en vanlig
+webbläsare.
+
+Själva erbjudandelistan visas inte. Den ligger bakom recepten som underlag —
+komponenten som ritar den finns kvar i
+[offer-list.component.ts](src/app/components/offer-list.component.ts), oanvänd
+men kompilerad och lintad, för den dagen den ska fram igen.
 
 ## Versioner och varför
 
@@ -11,6 +18,7 @@ en iPhone, men fungerar lika bra i en vanlig webbläsare.
 | Angular | 16.2 | Kravet är `^16.14.0 \|\| >=18.10.0`, alltså öppet uppåt, så det fungerar på Node 20.18.0. Nyare Angular kräver Node 20.19 eller senare och startar inte här. |
 | angular-eslint | 16.3.1 | `ng add` drar annars in v21 med ESLint 9 och flat config, som kräver Angular 20. Versionen är låst så att `npm install` inte glider iväg. |
 | Erbjudanden | Tjek (`squid-api.tjek.com/v2`) | Samma källa som ereklamblad.se. Gratis, ingen nyckel, och skickar CORS-huvuden — därför kan telefonen hämta direkt utan mellanserver. |
+| Recept och betyg | Tasteline (`tasteline.com/wp-json/wp/v2`) | Enda svenska receptkällan jag hittade som både har betyg på femgradig skala och svarar med CORS-huvuden. Köket.se har bättre betygsdata men skickar inga CORS-huvuden alls, ICA:s och Arlas recept-API:er svarar inte utan nyckel. |
 | Ortssökning | Open-Meteo Geocoding | Gratis, ingen nyckel. Används bara när positionen inte går att få. |
 | Ortsnamn från koordinater | BigDataCloud | Gratis utan nyckel för klientanrop. Namnet är trevligt men inte nödvändigt — misslyckas det heter platsen "Din plats". |
 
@@ -27,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 54 stycken:
+Appen svarar på http://localhost:4200. Testerna, 88 stycken:
 
 ```bash
 npm run test:ci
@@ -64,8 +72,40 @@ npm run lint
    kedjorna utan avstånd i stället för att hela sidan blir ett fel.
 5. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd och antal
    erbjudanden. Fyra rader visas från början och "Visa fler" lägger till fyra i
-   taget. Allt hämtas en gång; kryssrutor, sökfält och sortering arbetar sedan
-   på den redan hämtade listan, så en ändrad kryssruta syns direkt.
+   taget. Erbjudandena hämtas en gång per plats och radie; kryssrutorna arbetar
+   sedan på den redan hämtade listan.
+6. **Recepten.** De ikryssade kedjornas erbjudanden, störst rabatt först, blir
+   söktermer. Fem recept visas åt gången.
+
+## Recepten
+
+Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.service.ts):
+
+1. De tio bäst rabatterade varorna hos de valda kedjorna blir söktermer.
+   Rubrikerna är butikstext — "Svenskt smör", "PEPSI SUITCASE – MAX 2 KÖP/KUND" —
+   så [ingredient-candidates.ts](src/app/core/ingredient-candidates.ts) kapar
+   villkoren och lämnar två gissningar per vara: hela uttrycket och dess sista
+   ord. Sista ordet är med därför att svenska varunamn har huvudordet sist:
+   "svenskt smör" är smör.
+2. Söktermerna slås upp i Tastelines ingredienstaxonomi. **Det är också
+   matfiltret**: källan känner inte igen "toalettpapper" som ingrediens, så
+   varan faller bort av sig själv utan att appen behöver en egen lista över vad
+   som är mat. Sökningen är luddig och svarar gärna "Baconlindad kyckling" på
+   "kyckling", så termen måste dela namn med söktermen, och bland dem som gör
+   det vinner den som används i flest recept.
+3. Recepten hämtas i ett anrop för alla ingredienser och sållas på betyg: minst
+   3,5 av 5. Recept utan betyg faller bort på samma villkor.
+4. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
+   ingrediens kan ha dussintals högt betygsatta recept och skulle annars fylla
+   hela första sidan med blåbär — poängen är att visa vad man kan laga av rean,
+   plural.
+
+Varje recept länkar till receptsidan hos Tasteline och visar vilken rabatterad
+vara som gav träffen, med pris och kedja.
+
+Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
+skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
+kB för tjugo recept i stället för 7 kB.
 
 ## Favoriter
 
@@ -100,7 +140,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-54 test i sju filer:
+88 test i tio filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -122,6 +162,16 @@ Plats, annars är ortssökningen vägen framåt.
   täcker listan: fyra rader från början, fler när favoriterna är fler, fyra till
   per klick, att knappen försvinner när allt visas, och att en utfälld lista
   varken fälls ihop av ett kryss eller av en ny stjärna.
+- **[ingredient-candidates.spec.ts](src/app/core/ingredient-candidates.spec.ts)**
+  täcker översättningen från butiksrubrik till sökterm: att villkorstexten och
+  förpackningsstorlekarna kapas, att huvudordet plockas ut, och att "2 för 40"
+  inte blir söktermen "för".
+- **[recipes.service.spec.ts](src/app/core/recipes.service.spec.ts)** täcker
+  betygsgränsen, att icke-mat aldrig ens slås upp, att luddiga termträffar
+  avvisas, att recepten varvas över varorna, och att bara de behållna receptens
+  bilder hämtas.
+- **[recipe-list.component.spec.ts](src/app/components/recipe-list.component.spec.ts)**
+  täcker fem recept i taget och att korten länkar ut med `rel="noopener"`.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med
   stoppade tjänster och kontrollerar det som knyter ihop den: att en urkryssad
   kedja försvinner ur listan, att en favorit lyfts överst och kryssas i, att
@@ -147,3 +197,9 @@ saknas för de flesta erbjudanden — då visas bara priset, utan påhittad
 rabattsiffra. API:et är öppet men odokumenterat; går det sönder är det
 [`TjekService`](src/app/core/tjek.service.ts) och mappningen i
 [`OffersService`](src/app/core/offers.service.ts) som behöver ses över.
+
+Receptmatchningen är en gissning, inte en varukoppling. Appen vet inte att
+butikens "Kycklinglårfilé" och Tastelines "Kyckling" är samma sak i annat än
+namnet, så ett recept kan råka föreslås på fel vara. Betygen är Tastelines
+egna besökarbetyg och säger inget om hur många som röstat — antalet röster
+står i listan så att man kan väga in det själv.

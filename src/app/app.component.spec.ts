@@ -5,6 +5,8 @@ import { GeocodingService } from './core/geocoding.service';
 import { LocationError, LocationService } from './core/location.service';
 import { Coordinates, Offer, OfferBoard, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
+import { Recipe } from './core/recipes.models';
+import { RecipesService } from './core/recipes.service';
 
 const PLACE: Place = { name: 'Testköping', latitude: 59, longitude: 18 };
 
@@ -77,6 +79,16 @@ class StubOffersService {
   }
 }
 
+class StubRecipesService {
+  /** Speglar vilka kedjor som var ikryssade när recepten begärdes. */
+  lastSeedChains: string[] = [];
+
+  recipesFor(offers: readonly { chainName: string }[]): Observable<readonly Recipe[]> {
+    this.lastSeedChains = [...new Set(offers.map((offer) => offer.chainName))];
+    return of([]);
+  }
+}
+
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
   let location: StubLocationService;
@@ -114,6 +126,7 @@ describe('AppComponent', () => {
         { provide: LocationService, useClass: StubLocationService },
         { provide: GeocodingService, useClass: StubGeocodingService },
         { provide: OffersService, useClass: StubOffersService },
+        { provide: RecipesService, useClass: StubRecipesService },
       ],
     });
     return create();
@@ -136,6 +149,7 @@ describe('AppComponent', () => {
         { provide: LocationService, useClass: StubLocationService },
         { provide: GeocodingService, useClass: StubGeocodingService },
         { provide: OffersService, useClass: StubOffersService },
+        { provide: RecipesService, useClass: StubRecipesService },
       ],
     });
 
@@ -150,7 +164,7 @@ describe('AppComponent', () => {
     expect(text()).toContain('Testköping');
     expect(checkboxes().length).toBe(2);
     expect(checkboxes().every((box) => box.checked)).toBeTrue();
-    expect(fixture.componentInstance.visible().length).toBe(2);
+    expect(fixture.componentInstance.selectedOffers().length).toBe(2);
   });
 
   it('döljer kedjans erbjudanden när kryssrutan bockas ur', async () => {
@@ -159,7 +173,7 @@ describe('AppComponent', () => {
     checkboxes()[0].click();
     fixture.detectChanges();
 
-    const visible = fixture.componentInstance.visible();
+    const visible = fixture.componentInstance.selectedOffers();
     expect(visible.length).toBe(1);
     expect(visible[0].chainName).toBe('Coop');
   });
@@ -196,7 +210,7 @@ describe('AppComponent', () => {
 
     expect(chainNames()).toEqual(['Coop', 'Willys']);
     expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
-    expect(fixture.componentInstance.visible().map((offer) => offer.chainName)).toEqual(['Coop']);
+    expect(fixture.componentInstance.selectedOffers().map((offer) => offer.chainName)).toEqual(['Coop']);
   });
 
   it('behåller favoriten men inte ett tillfälligt kryss över en omstart', async () => {

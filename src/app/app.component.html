@@ -1,12 +1,12 @@
 <main class="page">
   <header class="top">
     <div class="title">
-      <p class="eyebrow">Veckans erbjudanden</p>
+      <p class="eyebrow">Laga av veckans rea</p>
       <h1>{{ board()?.place?.name || 'Rabatter nära dig' }}</h1>
       <p class="summary" *ngIf="board() as current">
-        {{ current.offers.length }}
-        {{ current.offers.length === 1 ? 'erbjudande' : 'erbjudanden' }} från
-        {{ current.chains.length }} {{ current.chains.length === 1 ? 'kedja' : 'kedjor' }}
+        {{ selectedOffers().length }}
+        {{ selectedOffers().length === 1 ? 'rabatterad vara' : 'rabatterade varor' }} från
+        {{ selected().size }} {{ selected().size === 1 ? 'vald kedja' : 'valda kedjor' }}
         <span *ngIf="fetchedLabel()"> · hämtat {{ fetchedLabel() }}</span>
       </p>
     </div>
@@ -71,67 +71,39 @@
     (clear)="clearChains()"
   ></app-chain-filter>
 
-  <section class="find" *ngIf="board()?.offers?.length">
-    <label class="field">
-      <input
-        type="search"
-        name="offer-query"
-        autocomplete="off"
-        enterkeyhint="search"
-        placeholder="Sök bland erbjudandena"
-        aria-label="Sök bland erbjudandena"
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-      />
-    </label>
-
-    <div class="chips" role="group" aria-label="Sortering">
-      <button
-        type="button"
-        class="chip"
-        [class.on]="sort() === 'discount'"
-        [attr.aria-pressed]="sort() === 'discount'"
-        (click)="chooseSort('discount')"
-      >
-        Störst rabatt
-      </button>
-      <button
-        type="button"
-        class="chip"
-        [class.on]="sort() === 'price'"
-        [attr.aria-pressed]="sort() === 'price'"
-        (click)="chooseSort('price')"
-      >
-        Lägsta pris
-      </button>
-    </div>
+  <section class="recipes-head" *ngIf="board()">
+    <h2 class="card-heading">Recept på det som är billigt</h2>
+    <p class="lead">Minst {{ minRating }} i betyg hos Tasteline. Klicka för att öppna receptet.</p>
   </section>
 
-  <p class="sr-only" role="status">{{ visible().length }} erbjudanden visas</p>
+  <p class="notice" *ngIf="recipesError() as message" role="status">
+    {{ message }}
+  </p>
 
-  <app-offer-list
-    *ngIf="visible().length"
-    [offers]="visible()"
-    [colors]="chainColors()"
-  ></app-offer-list>
+  <p class="sr-only" role="status">{{ recipes().length }} recept hittade</p>
 
-  <p class="empty" *ngIf="board() && !visible().length && !loading()">
+  <app-recipe-list *ngIf="recipes().length" [recipes]="recipes()"></app-recipe-list>
+
+  <p class="empty" *ngIf="recipesLoading() && !recipes().length">Söker recept …</p>
+
+  <p class="empty" *ngIf="board() && !recipesLoading() && !recipes().length && !recipesError()">
     <ng-container *ngIf="!chains().length">
       Inga matkedjor med erbjudanden hittades inom {{ radiusKm() }} km. Prova ett större avstånd.
     </ng-container>
     <ng-container *ngIf="chains().length && !selected().size">
-      Kryssa i minst en kedja för att se erbjudanden. Stjärnmärk de kedjor du
-      handlar i, så är de ikryssade nästa gång du öppnar appen.
+      Kryssa i minst en kedja för att få receptförslag. Stjärnmärk de kedjor du handlar i, så är
+      de ikryssade nästa gång du öppnar appen.
     </ng-container>
     <ng-container *ngIf="chains().length && selected().size">
-      Inget erbjudande matchar sökningen.
+      Inga recept med minst {{ minRating }} i betyg hittades på veckans rabatterade varor hos de
+      valda kedjorna. Prova att kryssa i fler kedjor.
     </ng-container>
   </p>
 
   <p class="loading" *ngIf="loading() && !board()">Hämtar erbjudanden …</p>
 
   <footer class="foot" *ngIf="board()">
-    Erbjudanden från butikernas reklamblad via Tjek. Priser och giltighet kan skilja sig åt mellan
-    butiker i samma kedja.
+    Erbjudanden från butikernas reklamblad via Tjek, recept och betyg från Tasteline. Priser och
+    giltighet kan skilja sig åt mellan butiker i samma kedja.
   </footer>
 </main>
