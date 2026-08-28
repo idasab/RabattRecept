@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 143 stycken:
+Appen svarar på http://localhost:4200. Testerna, 156 stycken:
 
 ```bash
 npm run test:ci
@@ -133,19 +133,34 @@ Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
 skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
 kB för tjugo recept i stället för 7 kB.
 
-## Uteslutna matvaror
+## Inställningar
 
-Kugghjulet uppe till höger öppnar inställningsmenyn, där man anger varor man
-inte vill ha receptförslag på — för allergier, för att man inte äter dem, eller
-för att man tröttnat. Listan sparas mellan besöken och fältet föreslår de
-råvaror appen känner igen. Antalet uteslutna varor står som en siffra på
-kugghjulet, så att en inställning som påverkar hela listan inte kan glömmas
-bort bakom en stängd meny.
+Kugghjulet uppe till höger öppnar inställningsmenyn. Antalet påslagna
+inställningar står som en siffra på kugghjulet, så att något som påverkar hela
+receptlistan inte kan glömmas bort bakom en stängd meny.
 
 Menyn stängs med Esc, med krysset eller genom att man trycker utanför. Fokus
 flyttas till panelen när den öppnas — inte till textfältet, för då fäller
 tangentbordet upp sig och döljer halva menyn — och tillbaka till kugghjulet när
 den stängs.
+
+### Bara svenska varor
+
+Kryssrutan visar bara recept på rea som butiken själv märkt svensk, i rubriken
+eller i beskrivningen: "Svensk nötfärs", "Ursprung Sverige", "Sverige/Kronfågel".
+
+Vad den inte gör är att gissa. I en mätning på 374 erbjudanden i Göteborg var
+53 märkta svenska och bara 6 angav ett annat ursprung — resten sa ingenting
+alls. De räknas som okända, inte som svenska, så filtret svarar på *vad vi vet
+är svenskt* och inte på *vad som är svenskt*. Priset är att listan kortas
+kraftigt: 374 varor blev 52, vilket i den mätningen ändå räckte till 35 recept
+på kyckling, ägg, halloumi, blandfärs och köttfärs.
+
+### Uteslutna matvaror
+
+Här anger man varor man inte vill ha receptförslag på — för allergier, för att man inte äter dem, eller
+för att man tröttnat. Listan sparas mellan besöken och fältet föreslår de
+råvaror appen känner igen.
 
 Uteslutningen görs på **erbjudandet**, inte på receptet. Är fläsk uteslutet
 blir fläskfilén aldrig en sökterm, och inga rätter som byggs på fläsk föreslås.
@@ -168,11 +183,15 @@ beskrivningen butikerna skriver om varan är färsk eller fryst — rubriken
 allt. Tjeks egna `category_ids` är tomma på samtliga erbjudanden och går alltså
 inte att använda.
 
-Två saker följer av att beskrivningen läses. Den nämner också sådant som inte
-är varan — märke, ursprung, jämförpris — så en uteslutning kan träffa bredare
-än man tänkt. Och orden matchas som de står: `färsk kyckling` fångar inte den
-som beskrivs som *kyld*, vilket i praktiken är samma sak. Vill man bort båda
-får man lägga till `kyld kyckling` också.
+Vissa ord räknas som samma sak. **Kyld och färsk är samma tillstånd** för kött
+och kyckling — butikerna väljer ord olika, och den som utesluter det ena menar
+båda. Detsamma gäller fryst och djupfryst. Synonymerna står i
+[food-exclusions.ts](src/app/core/food-exclusions.ts).
+
+Priset för att beskrivningen läses är att den också nämner sådant som inte är
+varan — märke, ursprung, jämförpris — så en uteslutning kan träffa bredare än
+man tänkt. Att utesluta för mycket är dock det säkra felet när skälet är en
+allergi.
 
 ## Favoriter
 
@@ -207,7 +226,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-143 test i tretton filer:
+156 test i fjorton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -251,10 +270,14 @@ Plats, annars är ortssökningen vägen framåt.
   riktiga butikstexter som underlag — "färsk kyckling" stoppar KYCKLINGSTEAK
   men inte den djupfrysta KYCKLINGFILÉ — och att samma vara inte kan läggas
   till två gånger.
+- **[origin.spec.ts](src/app/core/origin.spec.ts)** täcker svenskmärkningen,
+  och särskilt att ett erbjudande utan ursprungsuppgift räknas som okänt och
+  inte som svenskt.
 - **[settings-menu.component.spec.ts](src/app/components/settings-menu.component.spec.ts)**
   täcker menyn: att den är en dialog, att den stängs på tre sätt, att fokus
-  hamnar på panelen och inte i fältet, och att ett halvskrivet fält töms när
-  menyn öppnas på nytt.
+  hamnar på panelen och inte i fältet, att svenskfiltret speglas och skickas
+  vidare åt båda hållen, och att ett halvskrivet fält töms när menyn öppnas på
+  nytt.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med
   stoppade tjänster och kontrollerar det som knyter ihop den: att en urkryssad
   kedja försvinner ur listan, att en favorit lyfts överst och kryssas i, att

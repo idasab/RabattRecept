@@ -11,6 +11,9 @@ import { normalizeText } from './text';
  * fläskrecept dyker upp. Ett recept kan fortfarande innehålla fläsk som
  * biroll — appen läser inte recepten, den väljer bara vad den söker på.
  *
+ * Vissa ord räknas som samma: kyld och färsk är samma tillstånd för kött och
+ * kyckling, och den som utesluter det ena menar båda.
+ *
  * En uteslutning får bestå av flera ord, och då måste alla finnas i
  * erbjudandet. Det är skillnaden mellan att välja bort en råvara och att välja
  * bort ett visst utförande av den: "kyckling" stoppar all kyckling, medan
@@ -23,6 +26,25 @@ import { normalizeText } from './text';
  * ursprung, jämförpris — så en uteslutning kan träffa bredare än man tänkt.
  * Att utesluta för mycket är dock det säkra felet när skälet är en allergi.
  */
+
+/**
+ * Ord som betyder samma sak i butikstext och därför ska matcha varandra.
+ * Kyld och färsk är samma tillstånd för kött och kyckling — butikerna väljer
+ * ord olika, och den som utesluter färsk kyckling menar båda. Djupfryst och
+ * fryst likaså, åt det håll som ordslutet inte redan täcker.
+ */
+const SYNONYMS: string[][] = [
+  ['färsk', 'kyld'],
+  ['fryst', 'djupfryst'],
+];
+
+/** Uppslag från ett ord till alla ord som betyder samma sak, inklusive sig självt. */
+const SYNONYM_GROUPS = new Map<string, string[]>(
+  SYNONYMS.flatMap((group) => {
+    const normalized = group.map(normalizeText);
+    return normalized.map((word) => [word, normalized] as [string, string[]]);
+  })
+);
 
 /** Sant när erbjudandet gäller något användaren har uteslutit. */
 export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
@@ -45,7 +67,10 @@ export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
     return (
       needles.length > 0 &&
       needles.every((needle) =>
-        words.some((word) => word.startsWith(needle) || word.endsWith(needle))
+        // Ett synonymt ord duger lika bra: "färsk" ska träffa "Kyld."
+        (SYNONYM_GROUPS.get(needle) ?? [needle]).some((variant) =>
+          words.some((word) => word.startsWith(variant) || word.endsWith(variant))
+        )
       )
     );
   });

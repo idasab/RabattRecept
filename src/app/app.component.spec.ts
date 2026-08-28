@@ -10,13 +10,19 @@ import { RecipesService } from './core/recipes.service';
 
 const PLACE: Place = { name: 'Testköping', latitude: 59, longitude: 18 };
 
-function offer(id: string, chainId: string, chainName: string, heading = `Vara ${id}`): Offer {
+function offer(
+  id: string,
+  chainId: string,
+  chainName: string,
+  heading = `Vara ${id}`,
+  description = ''
+): Offer {
   return {
     id,
     chainId,
     chainName,
     heading,
-    description: '',
+    description,
     price: 10,
     prePrice: null,
     currency: 'SEK',
@@ -50,8 +56,8 @@ const BOARD: OfferBoard = {
     },
   ],
   offers: [
-    offer('1', 'willys', 'Willys', 'Kycklinglårfilé'),
-    offer('2', 'coop', 'Coop', 'Fläskytterfilé'),
+    offer('1', 'willys', 'Willys', 'Kycklinglårfilé', 'Kronfågel. Ursprung Sverige.'),
+    offer('2', 'coop', 'Coop', 'Fläskytterfilé', 'Ursprung Tyskland.'),
   ],
   fetchedAt: '2026-08-28T07:00:00.000Z',
 };
@@ -310,14 +316,38 @@ describe('AppComponent', () => {
     expect(document.activeElement).toBe(gear);
   });
 
-  it('räknar de uteslutna varorna på kugghjulet', async () => {
+  it('räknar påslagna inställningar på kugghjulet', async () => {
     await create();
     expect(element('.badge')).toBeNull();
 
     fixture.componentInstance.excludeFood('fläsk');
+    fixture.componentInstance.chooseSwedishOnly(true);
     fixture.detectChanges();
 
-    expect(element('.badge')?.textContent?.trim()).toBe('1');
+    expect(element('.badge')?.textContent?.trim()).toBe('2');
+  });
+
+  it('visar bara svenskmärkta varor när filtret är på', async () => {
+    await create();
+    expect(fixture.componentInstance.selectedOffers().length).toBe(2);
+
+    fixture.componentInstance.chooseSwedishOnly(true);
+    fixture.detectChanges();
+
+    // Bara kycklingen är märkt svensk i underlaget.
+    expect(fixture.componentInstance.selectedOffers().map((entry) => entry.heading)).toEqual([
+      'Kycklinglårfilé',
+    ]);
+  });
+
+  it('kommer ihåg svenskfiltret till nästa besök', async () => {
+    await create();
+    fixture.componentInstance.chooseSwedishOnly(true);
+
+    await restart();
+
+    expect(fixture.componentInstance.onlySwedish()).toBeTrue();
+    expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 
   it('erbjuder ortssökning när platsen nekas', async () => {

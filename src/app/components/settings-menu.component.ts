@@ -50,7 +50,23 @@ import { FormsModule } from '@angular/forms';
           </button>
         </header>
 
-        <h3>Uteslut matvaror</h3>
+        <h3>Ursprung</h3>
+        <label class="toggle">
+          <input
+            type="checkbox"
+            [checked]="onlySwedish"
+            (change)="swedishOnly.emit(!onlySwedish)"
+          />
+          <span class="toggle-text">
+            Bara svenska varor
+            <span class="note">
+              Visar bara recept på rea som butiken märkt svensk. De flesta erbjudanden säger
+              inget om ursprung, och de räknas då som okända — listan blir betydligt kortare.
+            </span>
+          </span>
+        </label>
+
+        <h3 class="later">Uteslut matvaror</h3>
         <p class="lead">
           Varor du inte vill laga av. Är fläsk uteslutet föreslås inga rätter som byggs på fläsk,
           hur billigt det än är.
@@ -147,11 +163,58 @@ import { FormsModule } from '@angular/forms';
       }
 
       h3 {
-        margin: 0 0 4px;
+        margin: 0 0 6px;
         font-size: 11px;
         font-weight: 600;
         letter-spacing: 1.1px;
         text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .later {
+        margin-top: 20px;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        padding: 4px 0 2px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Samma omritade kryssruta som i kedjelistan, så att de känns som ett par. */
+      .toggle input {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        margin: 1px 0 0;
+        padding: 0;
+        border: 1.5px solid var(--border-strong);
+        border-radius: 6px;
+        background: transparent;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+        transition: background-color 130ms ease, border-color 130ms ease;
+      }
+
+      .toggle input:checked {
+        border-color: var(--text);
+        background: var(--text) 50% 50% / 12px 10px no-repeat
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5.2 4.3 8.5 11 1.5' fill='none' stroke='%23f3f2ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      }
+
+      .toggle-text {
+        display: grid;
+        gap: 2px;
+        font-size: 15px;
+      }
+
+      .note {
+        font-size: 12px;
+        line-height: 1.4;
         color: var(--text-faint);
       }
 
@@ -273,10 +336,12 @@ import { FormsModule } from '@angular/forms';
 export class SettingsMenuComponent implements OnChanges {
   @Input() open = false;
   @Input({ required: true }) excluded: readonly string[] = [];
+  @Input() onlySwedish = false;
   /** Råvaror appen känner igen, som förslag i fältet. */
   @Input() suggestions: readonly string[] = [];
 
   @Output() readonly closed = new EventEmitter<void>();
+  @Output() readonly swedishOnly = new EventEmitter<boolean>();
   @Output() readonly add = new EventEmitter<string>();
   @Output() readonly remove = new EventEmitter<string>();
 

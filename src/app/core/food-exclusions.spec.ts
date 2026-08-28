@@ -76,10 +76,26 @@ describe('isExcluded', () => {
     expect(isExcluded(fryst, ['fryst kyckling'])).toBeTrue();
   });
 
-  it('räknar kyld som sitt eget ord', () => {
-    const kyld = offer('Färsk kycklingfilé', 'Sverige/Guldfågeln. Kyld. Ca 900 g.');
+  it('räknar kyld och färsk som samma tillstånd', () => {
+    // Butikerna väljer ord olika; den som utesluter färsk kyckling menar båda.
+    const kyld = offer('Kycklingfärs', 'Kronfågel. Kyld. 500 g.');
+    const farsk = offer('KYCKLINGSTEAK', 'Kronfågel. Ca 900 g. Färsk.');
 
-    expect(isExcluded(kyld, ['kyld kyckling'])).toBeTrue();
+    expect(isExcluded(kyld, ['färsk kyckling'])).toBeTrue();
+    expect(isExcluded(farsk, ['kyld kyckling'])).toBeTrue();
+  });
+
+  it('lämnar den frysta kvar trots att kyld räknas som färsk', () => {
+    const fryst = offer('KYCKLINGFILÉ', 'IVARS • 2kg • Djupfryst');
+
+    expect(isExcluded(fryst, ['färsk kyckling'])).toBeFalse();
+    expect(isExcluded(fryst, ['kyld kyckling'])).toBeFalse();
+  });
+
+  it('räknar djupfryst och fryst som samma tillstånd åt båda hållen', () => {
+    const fryst = offer('Kycklinglårfilé', 'Kronfågel. Fryst. 1 kg.');
+
+    expect(isExcluded(fryst, ['djupfryst kyckling'])).toBeTrue();
   });
 
   it('låter en fras vara mer tillåtande än ett ensamt ord', () => {

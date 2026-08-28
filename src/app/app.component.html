@@ -58,7 +58,7 @@
             stroke-linejoin="round"
           />
         </svg>
-        <span class="badge" *ngIf="excludedFoods().length">{{ excludedFoods().length }}</span>
+        <span class="badge" *ngIf="settingsCount()">{{ settingsCount() }}</span>
       </button>
     </div>
   </header>
@@ -66,8 +66,10 @@
   <app-settings-menu
     [open]="settingsOpen()"
     [excluded]="excludedFoods()"
+    [onlySwedish]="onlySwedish()"
     [suggestions]="knownFoods"
     (closed)="closeSettings()"
+    (swedishOnly)="chooseSwedishOnly($event)"
     (add)="excludeFood($event)"
     (remove)="allowFood($event)"
   ></app-settings-menu>

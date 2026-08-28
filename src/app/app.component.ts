@@ -17,6 +17,7 @@ import { RecipeListComponent } from './components/recipe-list.component';
 import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
 import { GeocodingService } from './core/geocoding.service';
 import { mainIngredientNames } from './core/main-ingredients';
+import { onlySwedishOffers } from './core/origin';
 import { LocationError, LocationService } from './core/location.service';
 import { filterOffers } from './core/offer-filter';
 import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
@@ -49,6 +50,8 @@ interface StoredSettings {
   favorites: string[];
   /** Matvaror man inte vill ha receptförslag på. */
   excludedFoods: string[];
+  /** Bara erbjudanden som butiken märkt svenska. */
+  onlySwedish: boolean;
   place: Place | null;
 }
 
@@ -96,6 +99,7 @@ export class AppComponent implements OnInit {
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly favorites = signal<ReadonlySet<string>>(new Set());
   readonly excludedFoods = signal<readonly string[]>([]);
+  readonly onlySwedish = signal(false);
   readonly settingsOpen = signal(false);
 
   @ViewChild('settingsButton') private settingsButton?: ElementRef<HTMLButtonElement>;
@@ -123,15 +127,20 @@ export class AppComponent implements OnInit {
    * här varorna som är söktermerna. Störst rabatt först är därför inte pynt
    * utan urvalsordning — det är de varorna det är värt att laga mat av.
    */
-  readonly selectedOffers = computed<readonly Offer[]>(() =>
-    withoutExcluded(
-      filterOffers(this.board()?.offers ?? [], {
-        chainIds: this.selected(),
-        query: '',
-        sort: 'discount',
-      }),
-      this.excludedFoods()
-    )
+  readonly selectedOffers = computed<readonly Offer[]>(() => {
+    const fromChains = filterOffers(this.board()?.offers ?? [], {
+      chainIds: this.selected(),
+      query: '',
+      sort: 'discount',
+    });
+
+    const allowed = withoutExcluded(fromChains, this.excludedFoods());
+    return this.onlySwedish() ? onlySwedishOffers(allowed) : allowed;
+  });
+
+  /** Hur många inställningar som är påslagna, som siffra på kugghjulet. */
+  readonly settingsCount = computed(
+    () => this.excludedFoods().length + (this.onlySwedish() ? 1 : 0)
   );
 
   readonly fetchedLabel = computed(() => {
@@ -178,6 +187,7 @@ export class AppComponent implements OnInit {
       this.selected.set(new Set(settings.selected));
       this.favorites.set(new Set(settings.favorites));
       this.excludedFoods.set(settings.excludedFoods);
+      this.onlySwedish.set(settings.onlySwedish);
     }
 
     // Det sparade underlaget visas direkt, så att appen har innehåll redan
@@ -290,6 +300,12 @@ export class AppComponent implements OnInit {
     this.requestRecipes();
   }
 
+  chooseSwedishOnly(only: boolean): void {
+    this.onlySwedish.set(only);
+    this.saveSettings();
+    this.requestRecipes();
+  }
+
   allowFood(entry: string): void {
     this.excludedFoods.set(removeExclusion(this.excludedFoods(), entry));
     this.saveSettings();
@@ -376,6 +392,7 @@ export class AppComponent implements OnInit {
       selected: [...this.selected()],
       favorites: [...this.favorites()],
       excludedFoods: [...this.excludedFoods()],
+      onlySwedish: this.onlySwedish(),
       place: this.board()?.place ?? null,
     };
 
@@ -395,6 +412,7 @@ export class AppComponent implements OnInit {
       ...stored,
       favorites: stored.favorites ?? [],
       excludedFoods: stored.excludedFoods ?? [],
+      onlySwedish: stored.onlySwedish ?? false,
     };
   }
 
