@@ -50,6 +50,23 @@ describe('isExcluded', () => {
   it('struntar i tomma rader i listan', () => {
     expect(isExcluded(offer('Kycklinglårfilé'), ['', '   '])).toBeFalse();
   });
+
+  it('kräver att alla ord finns när uteslutningen är en fras', () => {
+    // Poängen: välja bort ett visst utförande av råvaran, inte råvaran.
+    expect(isExcluded(offer('Färsk kycklingfilé'), ['färsk kycklingfilé'])).toBeTrue();
+    expect(isExcluded(offer('Fryst kycklingfilé'), ['färsk kycklingfilé'])).toBeFalse();
+  });
+
+  it('bryr sig inte om ordföljden i frasen', () => {
+    expect(isExcluded(offer('Kycklingfilé, färsk'), ['färsk kycklingfilé'])).toBeTrue();
+  });
+
+  it('låter en fras vara mer tillåtande än ett ensamt ord', () => {
+    const fryst = offer('Fryst kycklingfilé');
+
+    expect(isExcluded(fryst, ['kyckling'])).toBeTrue();
+    expect(isExcluded(fryst, ['färsk kyckling'])).toBeFalse();
+  });
 });
 
 describe('withoutExcluded', () => {

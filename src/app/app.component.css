@@ -40,13 +40,19 @@ h1 {
   color: var(--text-muted);
 }
 
-.refresh {
+.actions {
   flex: none;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.icon {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  margin-top: 8px;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--surface);
@@ -54,13 +60,32 @@ h1 {
   cursor: pointer;
 }
 
-.refresh:disabled {
+.icon:disabled {
   cursor: default;
 }
 
-.refresh svg {
+.icon svg {
   width: 19px;
   height: 19px;
+}
+
+/* Antalet uteslutna varor syns på kugghjulet, så att en inställning som
+   påverkar hela listan inte kan glömmas bort bakom en stängd meny. */
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1.5px solid var(--bg);
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .spinning {

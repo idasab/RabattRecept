@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 127 stycken:
+Appen svarar på http://localhost:4200. Testerna, 140 stycken:
 
 ```bash
 npm run test:ci
@@ -135,18 +135,32 @@ kB för tjugo recept i stället för 7 kB.
 
 ## Uteslutna matvaror
 
-Under **Uteslut matvaror** anger man varor man inte vill ha receptförslag på —
-för allergier, för att man inte äter dem, eller för att man tröttnat. Listan
-sparas mellan besöken och fältet föreslår de råvaror appen känner igen.
+Kugghjulet uppe till höger öppnar inställningsmenyn, där man anger varor man
+inte vill ha receptförslag på — för allergier, för att man inte äter dem, eller
+för att man tröttnat. Listan sparas mellan besöken och fältet föreslår de
+råvaror appen känner igen. Antalet uteslutna varor står som en siffra på
+kugghjulet, så att en inställning som påverkar hela listan inte kan glömmas
+bort bakom en stängd meny.
+
+Menyn stängs med Esc, med krysset eller genom att man trycker utanför. Fokus
+flyttas till panelen när den öppnas — inte till textfältet, för då fäller
+tangentbordet upp sig och döljer halva menyn — och tillbaka till kugghjulet när
+den stängs.
 
 Uteslutningen görs på **erbjudandet**, inte på receptet. Är fläsk uteslutet
 blir fläskfilén aldrig en sökterm, och inga rätter som byggs på fläsk föreslås.
 Ett recept kan fortfarande innehålla fläsk i en biroll: appen läser inte
 recepten, den väljer bara vad den söker på.
 
-Matchningen godtar ordets början och slut, precis som råvaruigenkänningen. Det
-gör att "fläsk" fångar både "Fläskytterfilé" och "Bacon/Stekfläsk" — vilket är
-rätt, för bacon är fläsk — men också att ett kort ord tar med mer än man tror.
+Ett ensamt ord matchar ordets början och slut, precis som råvaruigenkänningen.
+Det gör att "fläsk" fångar både "Fläskytterfilé" och "Bacon/Stekfläsk" — vilket
+är rätt, för bacon är fläsk — men också att ett kort ord tar med mer än man
+tror.
+
+**En uteslutning får bestå av flera ord, och då måste alla finnas i
+erbjudandet.** Det är skillnaden mellan att välja bort en råvara och att välja
+bort ett visst utförande av den: `kyckling` stoppar all kyckling, medan
+`färsk kycklingfilé` lämnar den frysta kvar. Ordföljden spelar ingen roll.
 
 ## Favoriter
 
@@ -181,7 +195,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-127 test i tretton filer:
+140 test i tretton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -220,11 +234,13 @@ Plats, annars är ortssökningen vägen framåt.
   täcker fem recept i taget och att korten länkar ut med `rel="noopener"`.
 - **[food-exclusions.spec.ts](src/app/core/food-exclusions.spec.ts)** täcker
   uteslutningarna: att ordet fångas i början och slutet av ett sammansatt
-  varunamn, att det matchar via råvaran när rubriken stavar annorlunda, och att
-  samma vara inte kan läggas till två gånger.
-- **[food-exclusions.component.spec.ts](src/app/components/food-exclusions.component.spec.ts)**
-  täcker inställningen: att den börjar hopfälld, räknar de uteslutna varorna,
-  tömmer fältet efter tillägg och inte skickar tomma rader.
+  varunamn, att det matchar via råvaran när rubriken stavar annorlunda, att en
+  fras kräver alla sina ord — "färsk kycklingfilé" stoppar den färska men inte
+  den frysta — och att samma vara inte kan läggas till två gånger.
+- **[settings-menu.component.spec.ts](src/app/components/settings-menu.component.spec.ts)**
+  täcker menyn: att den är en dialog, att den stängs på tre sätt, att fokus
+  hamnar på panelen och inte i fältet, och att ett halvskrivet fält töms när
+  menyn öppnas på nytt.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med
   stoppade tjänster och kontrollerar det som knyter ihop den: att en urkryssad
   kedja försvinner ur listan, att en favorit lyfts överst och kryssas i, att

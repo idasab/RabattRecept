@@ -107,6 +107,10 @@ describe('AppComponent', () => {
     return (fixture.nativeElement as HTMLElement).textContent ?? '';
   }
 
+  function element<T extends HTMLElement>(selector: string): T | null {
+    return (fixture.nativeElement as HTMLElement).querySelector<T>(selector);
+  }
+
   function stars(): HTMLButtonElement[] {
     return Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
@@ -276,6 +280,44 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
+  });
+
+  it('öppnar och stänger inställningsmenyn från kugghjulet', async () => {
+    await create();
+    expect(fixture.componentInstance.settingsOpen()).toBeFalse();
+    expect(element('app-settings-menu .panel')).toBeNull();
+
+    element<HTMLButtonElement>('.icon.settings')?.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.settingsOpen()).toBeTrue();
+    expect(element('app-settings-menu .panel')).not.toBeNull();
+
+    element<HTMLButtonElement>('app-settings-menu .close')?.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.settingsOpen()).toBeFalse();
+  });
+
+  it('lämnar fokus på kugghjulet när menyn stängs', async () => {
+    await create();
+    const gear = element<HTMLButtonElement>('.icon.settings');
+
+    gear?.click();
+    fixture.detectChanges();
+    fixture.componentInstance.closeSettings();
+
+    expect(document.activeElement).toBe(gear);
+  });
+
+  it('räknar de uteslutna varorna på kugghjulet', async () => {
+    await create();
+    expect(element('.badge')).toBeNull();
+
+    fixture.componentInstance.excludeFood('fläsk');
+    fixture.detectChanges();
+
+    expect(element('.badge')?.textContent?.trim()).toBe('1');
   });
 
   it('erbjuder ortssökning när platsen nekas', async () => {

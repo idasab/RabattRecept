@@ -10,6 +10,11 @@ import { normalizeText } from './text';
  * och fläsk är uteslutet, så blir fläskfilén aldrig en sökterm och inga
  * fläskrecept dyker upp. Ett recept kan fortfarande innehålla fläsk som
  * biroll — appen läser inte recepten, den väljer bara vad den söker på.
+ *
+ * En uteslutning får bestå av flera ord, och då måste alla finnas i
+ * erbjudandet. Det är skillnaden mellan att välja bort en råvara och att välja
+ * bort ett visst utförande av den: "kyckling" stoppar all kyckling, medan
+ * "färsk kyckling" lämnar den frysta kvar.
  */
 
 /** Sant när erbjudandet gäller något användaren har uteslutit. */
@@ -25,11 +30,16 @@ export function isExcluded(offer: Offer, excluded: readonly string[]): boolean {
   }
 
   return excluded.some((entry) => {
-    const needle = normalizeText(entry);
-    // Ordet får sitta i början eller slutet av ett sammansatt varunamn, precis
-    // som när råvaran känns igen: "fläsk" ska stoppa "fläskytterfilé".
+    const needles = wordsOf(entry);
+
+    // Varje ord i uteslutningen måste finnas i erbjudandet. Ordet får sitta i
+    // början eller slutet av ett sammansatt varunamn, precis som när råvaran
+    // känns igen: "fläsk" ska stoppa "fläskytterfilé".
     return (
-      !!needle && words.some((word) => word.startsWith(needle) || word.endsWith(needle))
+      needles.length > 0 &&
+      needles.every((needle) =>
+        words.some((word) => word.startsWith(needle) || word.endsWith(needle))
+      )
     );
   });
 }

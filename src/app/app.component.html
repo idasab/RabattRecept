@@ -11,26 +11,66 @@
       </p>
     </div>
 
-    <button
-      type="button"
-      class="refresh"
-      [disabled]="loading()"
-      [attr.aria-busy]="loading()"
-      aria-label="Hämta erbjudanden på nytt"
-      (click)="refresh()"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" [class.spinning]="loading()">
-        <path
-          d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.7"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+    <div class="actions">
+      <button
+        type="button"
+        class="icon"
+        [disabled]="loading()"
+        [attr.aria-busy]="loading()"
+        aria-label="Hämta erbjudanden på nytt"
+        (click)="refresh()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" [class.spinning]="loading()">
+          <path
+            d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        #settingsButton
+        type="button"
+        class="icon settings"
+        aria-label="Inställningar"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="settingsOpen()"
+        (click)="openSettings()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle
+            cx="12"
+            cy="12"
+            r="3.1"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+          <path
+            d="M19.4 13.5a7.7 7.7 0 0 0 0-3l1.7-1.3-1.8-3.1-2 .8a7.7 7.7 0 0 0-2.6-1.5L14.4 3H9.6l-.3 2.4a7.7 7.7 0 0 0-2.6 1.5l-2-.8L2.9 9.2l1.7 1.3a7.7 7.7 0 0 0 0 3L2.9 14.8l1.8 3.1 2-.8a7.7 7.7 0 0 0 2.6 1.5l.3 2.4h4.8l.3-2.4a7.7 7.7 0 0 0 2.6-1.5l2 .8 1.8-3.1z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="badge" *ngIf="excludedFoods().length">{{ excludedFoods().length }}</span>
+      </button>
+    </div>
   </header>
+
+  <app-settings-menu
+    [open]="settingsOpen()"
+    [excluded]="excludedFoods()"
+    [suggestions]="knownFoods"
+    (closed)="closeSettings()"
+    (add)="excludeFood($event)"
+    (remove)="allowFood($event)"
+  ></app-settings-menu>
 
   <p class="notice" *ngIf="error() as message" role="status">
     {{ message }}
@@ -70,14 +110,6 @@
     (selectAll)="selectAllChains()"
     (clear)="clearChains()"
   ></app-chain-filter>
-
-  <app-food-exclusions
-    *ngIf="board()"
-    [excluded]="excludedFoods()"
-    [suggestions]="knownFoods"
-    (add)="excludeFood($event)"
-    (remove)="allowFood($event)"
-  ></app-food-exclusions>
 
   <section class="recipes-head" *ngIf="board()">
     <h2 class="card-heading">Recept på det som är billigt</h2>

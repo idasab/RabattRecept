@@ -1,9 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, firstValueFrom, of, switchMap } from 'rxjs';
 import { ChainFilterComponent } from './components/chain-filter.component';
-import { FoodExclusionsComponent } from './components/food-exclusions.component';
+import { SettingsMenuComponent } from './components/settings-menu.component';
 import { PlaceSearchComponent } from './components/place-search.component';
 import { RecipeListComponent } from './components/recipe-list.component';
 import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
@@ -50,9 +58,9 @@ interface StoredSettings {
   imports: [
     CommonModule,
     ChainFilterComponent,
-    FoodExclusionsComponent,
     PlaceSearchComponent,
     RecipeListComponent,
+    SettingsMenuComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
@@ -88,6 +96,9 @@ export class AppComponent implements OnInit {
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly favorites = signal<ReadonlySet<string>>(new Set());
   readonly excludedFoods = signal<readonly string[]>([]);
+  readonly settingsOpen = signal(false);
+
+  @ViewChild('settingsButton') private settingsButton?: ElementRef<HTMLButtonElement>;
 
   readonly recipes = signal<readonly Recipe[]>([]);
   readonly recipesLoading = signal(false);
@@ -260,6 +271,17 @@ export class AppComponent implements OnInit {
 
     this.favorites.set(favorites);
     this.saveSettings();
+  }
+
+  openSettings(): void {
+    this.settingsOpen.set(true);
+  }
+
+  closeSettings(): void {
+    this.settingsOpen.set(false);
+    // Fokus tillbaka dit det kom ifrån, annars hamnar den som navigerar med
+    // tangentbord högst upp på sidan igen varje gång menyn stängs.
+    this.settingsButton?.nativeElement.focus();
   }
 
   excludeFood(entry: string): void {
