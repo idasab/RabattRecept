@@ -79,24 +79,20 @@ h1 {
   height: 19px;
 }
 
-/* Antalet uteslutna varor syns på kugghjulet, så att en inställning som
-   påverkar hela listan inte kan glömmas bort bakom en stängd meny. */
+/* En prick, inte en siffra. Att något är påslaget är det man behöver veta för
+   att inte glömma bort en inställning bakom en stängd meny; hur många det är
+   säger inte mer än så, och en siffra som blandar uteslutna varor med
+   svenskfiltret var mest förvirrande. Antalet står kvar i knappens upplästa
+   etikett, där det får plats att förklaras. */
 .badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  display: grid;
-  place-items: center;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  border: 1.5px solid var(--bg);
-  border-radius: 999px;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
   background: var(--accent);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .spinning {

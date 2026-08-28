@@ -316,16 +316,28 @@ describe('AppComponent', () => {
     expect(document.activeElement).toBe(gear);
   });
 
-  it('räknar påslagna inställningar på kugghjulet', async () => {
+  it('markerar kugghjulet med en prick när något är påslaget', async () => {
     await create();
     expect(element('.badge')).toBeNull();
 
     fixture.componentInstance.excludeFood('fläsk');
-    fixture.componentInstance.chooseSwedishMeat(true);
     fixture.detectChanges();
 
-    // Både uteslutna varor och svenskfiltret räknas — båda ändrar listan.
-    expect(element('.badge')?.textContent?.trim()).toBe('2');
+    // En prick, ingen siffra: antalet står i den upplästa etiketten.
+    expect(element('.badge')).not.toBeNull();
+    expect(element('.badge')?.textContent?.trim()).toBe('');
+  });
+
+  it('tar bort pricken när inställningarna nollställs', async () => {
+    await create();
+    fixture.componentInstance.excludeFood('fläsk');
+    fixture.detectChanges();
+    expect(element('.badge')).not.toBeNull();
+
+    fixture.componentInstance.allowFood('fläsk');
+    fixture.detectChanges();
+
+    expect(element('.badge')).toBeNull();
   });
 
   it('säger i klartext hur många inställningar som är aktiva', async () => {
