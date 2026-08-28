@@ -321,32 +321,32 @@ describe('AppComponent', () => {
     expect(element('.badge')).toBeNull();
 
     fixture.componentInstance.excludeFood('fläsk');
-    fixture.componentInstance.chooseSwedishOnly(true);
+    fixture.componentInstance.chooseSwedishMeat(true);
     fixture.detectChanges();
 
     expect(element('.badge')?.textContent?.trim()).toBe('2');
   });
 
-  it('visar bara svenskmärkta varor när filtret är på', async () => {
+  it('kräver svenskmärkning av kött när filtret är på', async () => {
     await create();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
-    fixture.componentInstance.chooseSwedishOnly(true);
+    fixture.componentInstance.chooseSwedishMeat(true);
     fixture.detectChanges();
 
-    // Bara kycklingen är märkt svensk i underlaget.
+    // Kycklingen är märkt svensk; fläsket kommer från Tyskland.
     expect(fixture.componentInstance.selectedOffers().map((entry) => entry.heading)).toEqual([
       'Kycklinglårfilé',
     ]);
   });
 
-  it('kommer ihåg svenskfiltret till nästa besök', async () => {
+  it('kommer ihåg köttfiltret till nästa besök', async () => {
     await create();
-    fixture.componentInstance.chooseSwedishOnly(true);
+    fixture.componentInstance.chooseSwedishMeat(true);
 
     await restart();
 
-    expect(fixture.componentInstance.onlySwedish()).toBeTrue();
+    expect(fixture.componentInstance.onlySwedishMeat()).toBeTrue();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 

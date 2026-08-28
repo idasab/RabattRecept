@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 156 stycken:
+Appen svarar på http://localhost:4200. Testerna, 161 stycken:
 
 ```bash
 npm run test:ci
@@ -144,17 +144,26 @@ flyttas till panelen när den öppnas — inte till textfältet, för då fälle
 tangentbordet upp sig och döljer halva menyn — och tillbaka till kugghjulet när
 den stängs.
 
-### Bara svenska varor
+### Bara svenskt kött
 
-Kryssrutan visar bara recept på rea som butiken själv märkt svensk, i rubriken
-eller i beskrivningen: "Svensk nötfärs", "Ursprung Sverige", "Sverige/Kronfågel".
+Kryssrutan kräver att **kött, chark och fågel** är märkta svenska för att ge
+receptförslag — i rubriken eller i beskrivningen: "Svensk nötfärs", "Ursprung
+Sverige", "Sverige/Kronfågel".
 
-Vad den inte gör är att gissa. I en mätning på 374 erbjudanden i Göteborg var
-53 märkta svenska och bara 6 angav ett annat ursprung — resten sa ingenting
-alls. De räknas som okända, inte som svenska, så filtret svarar på *vad vi vet
-är svenskt* och inte på *vad som är svenskt*. Priset är att listan kortas
-kraftigt: 374 varor blev 52, vilket i den mätningen ändå räckte till 35 recept
-på kyckling, ägg, halloumi, blandfärs och köttfärs.
+Kravet gäller bara kött. Fisk, ägg, ost och grönsaker släpps igenom oavsett,
+eftersom butikerna sällan skriver ut ursprunget på dem. Ett generellt
+ursprungskrav hade tagit bort nästan allt utan att säga något om varorna: i en
+mätning på 374 erbjudanden i Göteborg var bara 53 svenskmärkta, medan enbart 6
+angav ett annat ursprung. Med kravet begränsat till kött föll 21 erbjudanden
+bort i stället för 322.
+
+Vad filtret inte gör är att gissa. Kött utan ursprungsuppgift räknas som okänt
+och alltså inte som svenskt — det svarar på *vad vi vet är svenskt*, inte på
+*vad som är svenskt*.
+
+Vilka råvaror som räknas som kött står som `meat` i
+[main-ingredients.ts](src/app/core/main-ingredients.ts). Fisk och skaldjur gör
+det inte, i ordets svenska betydelse.
 
 ### Uteslutna matvaror
 
@@ -226,7 +235,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-156 test i fjorton filer:
+161 test i fjorton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -271,11 +280,11 @@ Plats, annars är ortssökningen vägen framåt.
   men inte den djupfrysta KYCKLINGFILÉ — och att samma vara inte kan läggas
   till två gånger.
 - **[origin.spec.ts](src/app/core/origin.spec.ts)** täcker svenskmärkningen,
-  och särskilt att ett erbjudande utan ursprungsuppgift räknas som okänt och
-  inte som svenskt.
+  vilka råvaror som räknas som kött, att kött utan ursprungsuppgift räknas som
+  okänt och inte som svenskt, och att fisk och grönsaker släpps igenom oavsett.
 - **[settings-menu.component.spec.ts](src/app/components/settings-menu.component.spec.ts)**
   täcker menyn: att den är en dialog, att den stängs på tre sätt, att fokus
-  hamnar på panelen och inte i fältet, att svenskfiltret speglas och skickas
+  hamnar på panelen och inte i fältet, att köttfiltret speglas och skickas
   vidare åt båda hållen, och att ett halvskrivet fält töms när menyn öppnas på
   nytt.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med

@@ -54,14 +54,15 @@ import { FormsModule } from '@angular/forms';
         <label class="toggle">
           <input
             type="checkbox"
-            [checked]="onlySwedish"
-            (change)="swedishOnly.emit(!onlySwedish)"
+            [checked]="onlySwedishMeat"
+            (change)="swedishMeatOnly.emit(!onlySwedishMeat)"
           />
           <span class="toggle-text">
-            Bara svenska varor
+            Bara svenskt kött
             <span class="note">
-              Visar bara recept på rea som butiken märkt svensk. De flesta erbjudanden säger
-              inget om ursprung, och de räknas då som okända — listan blir betydligt kortare.
+              Kött, chark och fågel måste vara märkta svenska för att ge receptförslag. Står
+              inget ursprung räknas köttet som okänt, inte som svenskt. Fisk, ägg och
+              grönsaker berörs inte — där skriver butikerna sällan ut ursprunget.
             </span>
           </span>
         </label>
@@ -336,12 +337,12 @@ import { FormsModule } from '@angular/forms';
 export class SettingsMenuComponent implements OnChanges {
   @Input() open = false;
   @Input({ required: true }) excluded: readonly string[] = [];
-  @Input() onlySwedish = false;
+  @Input() onlySwedishMeat = false;
   /** Råvaror appen känner igen, som förslag i fältet. */
   @Input() suggestions: readonly string[] = [];
 
   @Output() readonly closed = new EventEmitter<void>();
-  @Output() readonly swedishOnly = new EventEmitter<boolean>();
+  @Output() readonly swedishMeatOnly = new EventEmitter<boolean>();
   @Output() readonly add = new EventEmitter<string>();
   @Output() readonly remove = new EventEmitter<string>();
 

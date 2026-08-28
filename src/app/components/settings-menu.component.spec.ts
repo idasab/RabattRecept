@@ -91,23 +91,23 @@ describe('SettingsMenuComponent', () => {
     expect(document.activeElement).toBe(element('.panel'));
   }));
 
-  it('speglar om bara svenska varor är valt', () => {
+  it('speglar om bara svenskt kött är valt', () => {
     setOpen(true);
     expect(element<HTMLInputElement>('.toggle input')?.checked).toBeFalse();
 
-    fixture.componentInstance.onlySwedish = true;
+    fixture.componentInstance.onlySwedishMeat = true;
     fixture.detectChanges();
 
     expect(element<HTMLInputElement>('.toggle input')?.checked).toBeTrue();
   });
 
-  it('skickar vidare när svenskfiltret slås på och av', () => {
+  it('skickar vidare när köttfiltret slås på och av', () => {
     setOpen(true);
     const val: boolean[] = [];
-    fixture.componentInstance.swedishOnly.subscribe((only) => val.push(only));
+    fixture.componentInstance.swedishMeatOnly.subscribe((only) => val.push(only));
 
     element<HTMLInputElement>('.toggle input')?.click();
-    fixture.componentInstance.onlySwedish = true;
+    fixture.componentInstance.onlySwedishMeat = true;
     fixture.detectChanges();
     element<HTMLInputElement>('.toggle input')?.click();
 
@@ -117,7 +117,13 @@ describe('SettingsMenuComponent', () => {
   it('förklarar att okänt ursprung inte räknas som svenskt', () => {
     setOpen(true);
 
-    expect(element('.note')?.textContent).toContain('okända');
+    expect(element('.note')?.textContent).toContain('okänt');
+  });
+
+  it('förklarar att fisk och grönsaker inte berörs', () => {
+    setOpen(true);
+
+    expect(element('.note')?.textContent).toContain('Fisk');
   });
 
   it('säger till när inget är uteslutet', () => {

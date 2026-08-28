@@ -66,10 +66,10 @@
   <app-settings-menu
     [open]="settingsOpen()"
     [excluded]="excludedFoods()"
-    [onlySwedish]="onlySwedish()"
+    [onlySwedishMeat]="onlySwedishMeat()"
     [suggestions]="knownFoods"
     (closed)="closeSettings()"
-    (swedishOnly)="chooseSwedishOnly($event)"
+    (swedishMeatOnly)="chooseSwedishMeat($event)"
     (add)="excludeFood($event)"
     (remove)="allowFood($event)"
   ></app-settings-menu>

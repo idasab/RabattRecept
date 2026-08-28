@@ -1,3 +1,4 @@
+import { isMeatIngredient, mainIngredientFor } from './main-ingredients';
 import { Offer } from './offers.models';
 import { normalizeText } from './text';
 
@@ -8,17 +9,7 @@ import { normalizeText } from './text';
  */
 const SWEDISH = ['svensk', 'sverige'];
 
-/**
- * Sant när butiken själv anger varan som svensk, i rubriken eller i
- * beskrivningen.
- *
- * Notera vad det inte betyder. De allra flesta erbjudanden säger ingenting
- * alls om ursprung — i en mätning på 374 erbjudanden var 53 märkta svenska och
- * bara 6 angav ett annat ursprung. Resten är alltså okända, inte utländska.
- * Filtret svarar därför på "vad vet vi är svenskt", inte på "vad är svenskt",
- * och det är med flit: att gissa åt andra hållet vore att påstå något källan
- * inte säger.
- */
+/** Sant när butiken själv anger varan som svensk, i rubriken eller beskrivningen. */
 export function isSwedish(offer: Offer): boolean {
   const words = normalizeText(`${offer.heading} ${offer.description}`)
     .split(/[^a-z0-9]+/)
@@ -30,7 +21,23 @@ export function isSwedish(offer: Offer): boolean {
   });
 }
 
-/** Erbjudandena som är märkta svenska. */
-export function onlySwedishOffers(offers: readonly Offer[]): Offer[] {
-  return offers.filter(isSwedish);
+/** Sant när erbjudandet gäller kött, chark eller fågel. */
+export function isMeatOffer(offer: Offer): boolean {
+  return isMeatIngredient(mainIngredientFor(offer.heading));
+}
+
+/**
+ * Erbjudandena som får vara kvar när man bara vill ha svenskt kött.
+ *
+ * Kravet gäller bara kött, chark och fågel. För det är ursprunget nästan
+ * alltid utskrivet, och det är där det spelar roll. Fisk, ägg, ost och
+ * grönsaker släpps igenom oavsett, eftersom butikerna sällan skriver ut
+ * ursprunget på dem — ett krav där hade tagit bort nästan allt utan att säga
+ * något om varorna.
+ *
+ * Okänt ursprung på kött räknas som icke-svenskt, inte som svenskt. Filtret
+ * svarar på vad vi vet, inte på vad vi gissar.
+ */
+export function onlySwedishMeat(offers: readonly Offer[]): Offer[] {
+  return offers.filter((offer) => !isMeatOffer(offer) || isSwedish(offer));
 }

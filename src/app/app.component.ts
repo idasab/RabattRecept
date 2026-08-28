@@ -17,7 +17,7 @@ import { RecipeListComponent } from './components/recipe-list.component';
 import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
 import { GeocodingService } from './core/geocoding.service';
 import { mainIngredientNames } from './core/main-ingredients';
-import { onlySwedishOffers } from './core/origin';
+import { onlySwedishMeat } from './core/origin';
 import { LocationError, LocationService } from './core/location.service';
 import { filterOffers } from './core/offer-filter';
 import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
@@ -50,8 +50,8 @@ interface StoredSettings {
   favorites: string[];
   /** Matvaror man inte vill ha receptförslag på. */
   excludedFoods: string[];
-  /** Bara erbjudanden som butiken märkt svenska. */
-  onlySwedish: boolean;
+  /** Kräv svenskmärkning av kött, chark och fågel. */
+  onlySwedishMeat: boolean;
   place: Place | null;
 }
 
@@ -99,7 +99,7 @@ export class AppComponent implements OnInit {
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly favorites = signal<ReadonlySet<string>>(new Set());
   readonly excludedFoods = signal<readonly string[]>([]);
-  readonly onlySwedish = signal(false);
+  readonly onlySwedishMeat = signal(false);
   readonly settingsOpen = signal(false);
 
   @ViewChild('settingsButton') private settingsButton?: ElementRef<HTMLButtonElement>;
@@ -135,12 +135,12 @@ export class AppComponent implements OnInit {
     });
 
     const allowed = withoutExcluded(fromChains, this.excludedFoods());
-    return this.onlySwedish() ? onlySwedishOffers(allowed) : allowed;
+    return this.onlySwedishMeat() ? onlySwedishMeat(allowed) : allowed;
   });
 
   /** Hur många inställningar som är påslagna, som siffra på kugghjulet. */
   readonly settingsCount = computed(
-    () => this.excludedFoods().length + (this.onlySwedish() ? 1 : 0)
+    () => this.excludedFoods().length + (this.onlySwedishMeat() ? 1 : 0)
   );
 
   readonly fetchedLabel = computed(() => {
@@ -187,7 +187,7 @@ export class AppComponent implements OnInit {
       this.selected.set(new Set(settings.selected));
       this.favorites.set(new Set(settings.favorites));
       this.excludedFoods.set(settings.excludedFoods);
-      this.onlySwedish.set(settings.onlySwedish);
+      this.onlySwedishMeat.set(settings.onlySwedishMeat);
     }
 
     // Det sparade underlaget visas direkt, så att appen har innehåll redan
@@ -300,8 +300,8 @@ export class AppComponent implements OnInit {
     this.requestRecipes();
   }
 
-  chooseSwedishOnly(only: boolean): void {
-    this.onlySwedish.set(only);
+  chooseSwedishMeat(only: boolean): void {
+    this.onlySwedishMeat.set(only);
     this.saveSettings();
     this.requestRecipes();
   }
@@ -392,7 +392,7 @@ export class AppComponent implements OnInit {
       selected: [...this.selected()],
       favorites: [...this.favorites()],
       excludedFoods: [...this.excludedFoods()],
-      onlySwedish: this.onlySwedish(),
+      onlySwedishMeat: this.onlySwedishMeat(),
       place: this.board()?.place ?? null,
     };
 
@@ -412,7 +412,7 @@ export class AppComponent implements OnInit {
       ...stored,
       favorites: stored.favorites ?? [],
       excludedFoods: stored.excludedFoods ?? [],
-      onlySwedish: stored.onlySwedish ?? false,
+      onlySwedishMeat: stored.onlySwedishMeat ?? false,
     };
   }
 

@@ -11,6 +11,13 @@ interface MainIngredient {
    * "färs" utan att ha med köttfärs att göra.
    */
   except?: string[];
+  /**
+   * Kött, chark och fågel. Det är för de här varorna ursprunget brukar stå
+   * utskrivet, och det är dem svenskfiltret gäller. Fisk, ägg och det
+   * vegetariska räknas inte som kött här — det är den svenska betydelsen av
+   * ordet, och den som vill ha svensk lax får söka på annat sätt.
+   */
+  meat?: boolean;
 }
 
 /**
@@ -32,29 +39,29 @@ interface MainIngredient {
  */
 const MAIN_INGREDIENTS: MainIngredient[] = [
   // Fågel
-  { name: 'Kyckling', stems: ['kyckling'], except: ['kycklingbuljong', 'kycklingfond'] },
-  { name: 'Kalkon', stems: ['kalkon'] },
-  { name: 'Anka', stems: ['anka'] },
+  { name: 'Kyckling', stems: ['kyckling'], except: ['kycklingbuljong', 'kycklingfond'], meat: true },
+  { name: 'Kalkon', stems: ['kalkon'], meat: true },
+  { name: 'Anka', stems: ['anka'], meat: true },
 
   // Nöt — färsvarianterna före den allmänna "färs".
-  { name: 'Nötfärs', stems: ['nötfärs'] },
-  { name: 'Blandfärs', stems: ['blandfärs'] },
-  { name: 'Köttfärs', stems: ['köttfärs', 'färs'], except: ['färsk'] },
-  { name: 'Högrev', stems: ['högrev'] },
-  { name: 'Entrecôte', stems: ['entrecôte', 'entrecote'] },
-  { name: 'Oxfilé', stems: ['oxfilé', 'oxfile'] },
-  { name: 'Ryggbiff', stems: ['ryggbiff'] },
+  { name: 'Nötfärs', stems: ['nötfärs'], meat: true },
+  { name: 'Blandfärs', stems: ['blandfärs'], meat: true },
+  { name: 'Köttfärs', stems: ['köttfärs', 'färs'], except: ['färsk'], meat: true },
+  { name: 'Högrev', stems: ['högrev'], meat: true },
+  { name: 'Entrecôte', stems: ['entrecôte', 'entrecote'], meat: true },
+  { name: 'Oxfilé', stems: ['oxfilé', 'oxfile'], meat: true },
+  { name: 'Ryggbiff', stems: ['ryggbiff'], meat: true },
 
   // Fläsk — de sammansatta före karré och kotlett.
-  { name: 'Fläskfilé', stems: ['fläskfilé', 'fläskfile', 'ytterfilé', 'ytterfile'] },
-  { name: 'Fläskkarré', stems: ['fläskkarré', 'karré'] },
-  { name: 'Fläskkotlett', stems: ['fläskkotlett', 'kotlett'] },
-  { name: 'Kassler', stems: ['kassler'] },
-  { name: 'Revbensspjäll', stems: ['revbensspjäll', 'revben'] },
-  { name: 'Bacon', stems: ['bacon'] },
-  { name: 'Skinka', stems: ['skinka'] },
+  { name: 'Fläskfilé', stems: ['fläskfilé', 'fläskfile', 'ytterfilé', 'ytterfile'], meat: true },
+  { name: 'Fläskkarré', stems: ['fläskkarré', 'karré'], meat: true },
+  { name: 'Fläskkotlett', stems: ['fläskkotlett', 'kotlett'], meat: true },
+  { name: 'Kassler', stems: ['kassler'], meat: true },
+  { name: 'Revbensspjäll', stems: ['revbensspjäll', 'revben'], meat: true },
+  { name: 'Bacon', stems: ['bacon'], meat: true },
+  { name: 'Skinka', stems: ['skinka'], meat: true },
 
-  { name: 'Lamm', stems: ['lamm'] },
+  { name: 'Lamm', stems: ['lamm'], meat: true },
 
   // Fisk och skaldjur
   { name: 'Lax', stems: ['lax'] },
@@ -69,8 +76,8 @@ const MAIN_INGREDIENTS: MainIngredient[] = [
   { name: 'Musslor', stems: ['musslor', 'mussla'] },
 
   // Korv — falukorven före den allmänna korven.
-  { name: 'Falukorv', stems: ['falukorv'] },
-  { name: 'Korv', stems: ['korv'], except: ['korvbröd'] },
+  { name: 'Falukorv', stems: ['falukorv'], meat: true },
+  { name: 'Korv', stems: ['korv'], except: ['korvbröd'], meat: true },
 
   { name: 'Ägg', stems: ['ägg'] },
 
@@ -89,6 +96,13 @@ const PREPARED = MAIN_INGREDIENTS.map((entry) => ({
   stems: entry.stems.map(normalizeText),
   except: (entry.except ?? []).map(normalizeText),
 }));
+
+const MEAT = new Set(MAIN_INGREDIENTS.filter((entry) => entry.meat).map((entry) => entry.name));
+
+/** Sant för kött, chark och fågel — inte för fisk, ägg eller vegetariskt. */
+export function isMeatIngredient(name: string | null): boolean {
+  return name !== null && MEAT.has(name);
+}
 
 /** Alla huvudråvaror appen känner till, i listans ordning. */
 export function mainIngredientNames(): string[] {
