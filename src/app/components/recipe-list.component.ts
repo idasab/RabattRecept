@@ -1,10 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges } from '@angular/core';
 import { formatPrice } from '../core/format';
-import { Recipe } from '../core/recipes.models';
+import { Recipe, RecipeMatch } from '../core/recipes.models';
 
 /** Hur många recept som visas från början, och hur många "Visa fler" lägger till. */
 const STEP = 5;
+
+/**
+ * Hur många rabatterade varor som räknas upp under receptet. Fler än så gör
+ * korten olika höga och listan svårläst; resten sammanfattas som ett antal.
+ */
+const MAX_MATCHES = 3;
 
 const RATING = new Intl.NumberFormat('sv-SE', {
   minimumFractionDigits: 1,
@@ -13,8 +19,10 @@ const RATING = new Intl.NumberFormat('sv-SE', {
 
 /**
  * Recepten, fem i taget. Varje kort är en länk till receptsidan hos källan —
- * det är där man lagar maten, appen är bara vägen dit — och visar vilken
- * rabatterad vara som gav träffen, så att kopplingen till rean syns.
+ * det är där man lagar maten, appen är bara vägen dit — och sammanfattar
+ * under rubriken vilka av receptets varor som är rabatterade, till vilket
+ * pris och i vilken butik. Det är den sammanfattningen som gör listan
+ * användbar i butiken snarare än bara inspirerande.
  */
 @Component({
   selector: 'app-recipe-list',
@@ -46,7 +54,15 @@ const RATING = new Intl.NumberFormat('sv-SE', {
               {{ rating(recipe) }}
               <span class="votes">{{ votes(recipe) }}</span>
             </span>
-            <span class="match">{{ match(recipe) }}</span>
+            <span class="matches">
+              <span class="match" *ngFor="let match of shownMatches(recipe)">
+                <span class="vara">{{ match.ingredient }}</span>
+                {{ price(match) }} på {{ match.chainName }}
+              </span>
+              <span class="match more-matches" *ngIf="hiddenMatches(recipe) as hidden">
+                +{{ hidden }} {{ hidden === 1 ? 'vara till' : 'varor till' }}
+              </span>
+            </span>
           </span>
 
           <svg class="go" viewBox="0 0 24 24" aria-hidden="true">
@@ -131,12 +147,27 @@ const RATING = new Intl.NumberFormat('sv-SE', {
         color: var(--text-faint);
       }
 
+      .matches {
+        display: grid;
+        gap: 1px;
+        margin-top: 2px;
+      }
+
       .match {
         font-size: 12px;
         color: var(--text-faint);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      /* Varunamnet bär informationen; priset och butiken är stödet. */
+      .vara {
+        color: var(--text-muted);
+      }
+
+      .more-matches {
+        font-style: italic;
       }
 
       .go {
@@ -197,10 +228,19 @@ export class RecipeListComponent implements OnChanges {
     return recipe.votes === 1 ? '(1 röst)' : `(${recipe.votes} röster)`;
   }
 
-  /** Varan som gav träffen, med kedjan och reapriset. */
-  match(recipe: Recipe): string {
-    const { ingredient, chainName, price, currency } = recipe.match;
-    return `${ingredient} · ${formatPrice(price, currency)} på ${chainName}`;
+  /** Varorna som räknas upp under receptet. */
+  shownMatches(recipe: Recipe): readonly RecipeMatch[] {
+    return recipe.matches.slice(0, MAX_MATCHES);
+  }
+
+  /** Hur många varor som inte fick plats, eller null när alla ryms. */
+  hiddenMatches(recipe: Recipe): number | null {
+    const hidden = recipe.matches.length - MAX_MATCHES;
+    return hidden > 0 ? hidden : null;
+  }
+
+  price(match: RecipeMatch): string {
+    return formatPrice(match.price, match.currency);
   }
 
   trackById(_index: number, recipe: Recipe): number {

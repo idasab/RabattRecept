@@ -23,6 +23,20 @@ const MAX_CANDIDATES = 10;
 const RECIPE_LIMIT = 60;
 
 /**
+ * Hur många ingredienstermer varje vara får svara mot.
+ *
+ * Källans taxonomi är finkornig: ett recept som använder lök taggas med
+ * "gul lök(ar)" eller "rödlök", inte med "lök". Väljer man bara en term per
+ * vara sammanfaller de nästan aldrig — ett recept av sextio matchade både
+ * nötfärs och lök i en mätning. Med flera termer per vara hittas både fler
+ * recept och de fall där ett recept faktiskt använder flera reavaror.
+ */
+const TERMS_PER_ITEM = 5;
+
+/** Lägsta rang en term måste ha för att räknas som samma vara. */
+const MIN_TERM_RANK = 2;
+
+/**
  * Recept på varor som är på rea hos de valda kedjorna.
  *
  * Kedjan är: erbjudandenas rubriker blir söktermer, receptkällan får avgöra
@@ -54,24 +68,42 @@ export class RecipesService {
   }
 
   /**
-   * Kopplar varje sökterm till den ingrediens källan kände igen. Sökningen är
-   * luddig och svarar gärna med "Baconlindad kyckling" på "kyckling", så
-   * termen måste dela namn med söktermen åt något håll. Bland dem som gör det
-   * vinner den som används i flest recept — det är den vanliga varan.
+   * Kopplar varje vara till de ingredienstermer källan kände igen.
+   *
+   * Sökningen är luddig och rangordnar dåligt, så urvalet görs här: en term
+   * som heter precis som varan går före en där varan är ett eget ord i
+   * namnet. Termer där ordet bara ingår i en sammansättning duger inte —
+   * annars blir "smör" till "smörgåsgurka" och "lök" till
+   * "bananschalottenlök". Bland de godkända vinner de som används i flest
+   * recept, och de fem bästa får representera varan.
+   *
+   * Namnet som visas är den bäst rangordnade termens, så att en vara heter
+   * samma sak oavsett vilken av dess termer receptet råkade taggas med.
    */
   private matchTerms(
     candidates: readonly Candidate[],
     terms: Map<string, TastelineTerm[]>
-  ): Map<number, Candidate & { ingredient: string }> {
-    const matched = new Map<number, Candidate & { ingredient: string }>();
+  ): Map<number, MatchedCandidate> {
+    const matched = new Map<number, MatchedCandidate>();
 
     for (const candidate of candidates) {
-      const best = (terms.get(candidate.term) ?? [])
-        .filter((term) => relates(term.name, candidate.term))
-        .sort((a, b) => b.count - a.count)[0];
+      const ranked = (terms.get(candidate.term) ?? [])
+        .map((term) => ({ term, rank: rankTerm(term.name, candidate.term) }))
+        .filter((scored) => scored.rank >= MIN_TERM_RANK)
+        .sort((a, b) => b.rank - a.rank || b.term.count - a.term.count)
+        .slice(0, TERMS_PER_ITEM);
 
-      if (best && !matched.has(best.id)) {
-        matched.set(best.id, { ...candidate, ingredient: best.name });
+      const ingredient = ranked[0]?.term.name;
+      if (!ingredient) {
+        continue;
+      }
+
+      for (const scored of ranked) {
+        // Första varan som gör anspråk på en term får behålla den, annars
+        // skulle "lök" och "gul lök" kunna peka på samma erbjudande två gånger.
+        if (!matched.has(scored.term.id)) {
+          matched.set(scored.term.id, { ...candidate, ingredient });
+        }
       }
     }
 
@@ -85,7 +117,7 @@ export class RecipesService {
    */
   private toFound(
     raw: readonly TastelineRecipe[],
-    matched: Map<number, Candidate & { ingredient: string }>
+    matched: Map<number, MatchedCandidate>
   ): Found[] {
     const found: Found[] = [];
 
@@ -95,9 +127,18 @@ export class RecipesService {
         continue;
       }
 
-      // Receptet kan använda flera av varorna; den första räcker som förklaring.
-      const source = (entry.ingredient ?? []).map((id) => matched.get(id)).find(Boolean);
-      if (!source) {
+      // Ett recept använder ofta flera av veckans reavaror. Alla tas med, så
+      // att listan kan sammanfatta vad man faktiskt får billigt och var.
+      // Samma vara kan nås via flera av sina termer, så den räknas bara en gång.
+      const sources = new Map<string, MatchedCandidate>();
+      for (const id of entry.ingredient ?? []) {
+        const source = matched.get(id);
+        if (source && !sources.has(source.offer.id)) {
+          sources.set(source.offer.id, source);
+        }
+      }
+
+      if (!sources.size) {
         continue;
       }
 
@@ -109,13 +150,13 @@ export class RecipesService {
           rating,
           votes: Number(entry.meta?.tasteline_recipe_data?.recipe?.rating?.votes ?? 0),
           image: null,
-          match: {
+          matches: [...sources.values()].map((source) => ({
             ingredient: source.ingredient,
             offerHeading: source.offer.heading,
             chainName: source.offer.chainName,
             price: source.offer.price,
             currency: source.offer.currency,
-          },
+          })),
         },
         attachmentId: firstAttachment(entry),
       });
@@ -156,7 +197,8 @@ function spreadOverIngredients(found: readonly Found[]): Found[] {
   const queues = new Map<string, Found[]>();
 
   for (const entry of found) {
-    const key = entry.recipe.match.ingredient;
+    // Grupperas på den bäst rabatterade varan, alltså den som står först.
+    const key = entry.recipe.matches[0].ingredient;
     const queue = queues.get(key);
     if (queue) {
       queue.push(entry);
@@ -180,6 +222,9 @@ function spreadOverIngredients(found: readonly Found[]): Found[] {
   return spread;
 }
 
+/** En vara med det namn dess ingredienstermer ska visas under. */
+type MatchedCandidate = Candidate & { ingredient: string };
+
 /** Ett recept på väg genom sållningen, med bildens id kvar. */
 interface Found {
   recipe: Recipe;
@@ -197,11 +242,40 @@ function firstAttachment(entry: TastelineRecipe): number | null {
   return first?.attachmentId ?? null;
 }
 
-/** Sant när termnamnet och söktermen delar ord åt något håll. */
-function relates(termName: string, search: string): boolean {
-  const a = normalizeText(termName);
-  const b = normalizeText(search);
-  return a.includes(b) || b.includes(a);
+/**
+ * Hur väl en ingrediensterm svarar mot varan.
+ *
+ * 3 betyder samma namn. 2 betyder att varan är termens huvudord, alltså sitter
+ * sist och med högst ett ord framför — så fångas "gul lök(ar)" för lök och
+ * "saltat smör" för smör. 1 betyder att ordet bara ingår någonstans, vilket
+ * inte duger: "smörgåsgurka" är inte smör, och "vegofärs istället för
+ * kyckling" är inte kyckling trots att ordet står sist i namnet.
+ */
+function rankTerm(termName: string, search: string): number {
+  // Källan skriver böjningen i parentes: "gul lök(ar)", "vitlöksklyfta(or)".
+  const name = normalizeText(termName.replace(/\([^)]*\)/g, ' '));
+  const needle = normalizeText(search);
+
+  if (!name || !needle) {
+    return 0;
+  }
+  if (name === needle) {
+    return 3;
+  }
+
+  const nameWords = name.split(/\s+/);
+  const needleWords = needle.split(/\s+/);
+  const headIsNeedle = nameWords.slice(-needleWords.length).join(' ') === needle;
+
+  // Ett extra ord framför är en variant av varan; en hel mening är något annat.
+  if (headIsNeedle && nameWords.length <= needleWords.length + 1) {
+    return 2;
+  }
+  if (name.includes(needle) || needle.includes(name)) {
+    return 1;
+  }
+
+  return 0;
 }
 
 /** WordPress skickar rubriker med HTML-entiteter, t.ex. &#8211; för tankstreck. */

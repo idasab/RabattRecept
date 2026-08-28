@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 88 stycken:
+Appen svarar på http://localhost:4200. Testerna, 96 stycken:
 
 ```bash
 npm run test:ci
@@ -90,9 +90,16 @@ Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.servic
 2. Söktermerna slås upp i Tastelines ingredienstaxonomi. **Det är också
    matfiltret**: källan känner inte igen "toalettpapper" som ingrediens, så
    varan faller bort av sig själv utan att appen behöver en egen lista över vad
-   som är mat. Sökningen är luddig och svarar gärna "Baconlindad kyckling" på
-   "kyckling", så termen måste dela namn med söktermen, och bland dem som gör
-   det vinner den som används i flest recept.
+   som är mat.
+
+   Taxonomin är finkornig och sökningen rangordnar dåligt, så urvalet görs i
+   appen. Varan måste vara termens **huvudord** — sitta sist och med högst ett
+   ord framför. Då fångas "gul lök(ar)" för lök och "saltat smör" för smör,
+   medan "smörgåsgurka" och "vegofärs istället för kyckling" faller bort trots
+   att ordet finns i namnet. Varje vara får sedan svara mot sina fem bäst
+   rangordnade termer, inte bara en: ett recept som använder lök taggas med
+   "gul lök(ar)", aldrig med "lök", så en enda term per vara hittar långt
+   färre recept.
 3. Recepten hämtas i ett anrop för alla ingredienser och sållas på betyg: minst
    3,5 av 5. Recept utan betyg faller bort på samma villkor.
 4. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
@@ -100,8 +107,17 @@ Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.servic
    hela första sidan med blåbär — poängen är att visa vad man kan laga av rean,
    plural.
 
-Varje recept länkar till receptsidan hos Tasteline och visar vilken rabatterad
-vara som gav träffen, med pris och kedja.
+Varje recept länkar till receptsidan hos Tasteline och sammanfattar under
+rubriken vilka av receptets varor som är rabatterade, till vilket pris och i
+vilken butik — upp till tre, resten som ett antal. Samma vara räknas en gång
+även när receptet taggats med flera av dess termer.
+
+I praktiken står det oftast bara en vara per recept. Det beror inte på
+sammanfattningen utan på söktermerna: de tas från de varor som har **störst
+rabatt i procent**, och det är oftare skafferi- och färdigvaror — bakpulver,
+chiliflakes, energidryck, toalettpapper — än råvaror man lagar en måltid av.
+Att i stället vikta på pris skulle ge kött, fisk och ost som söktermer, och
+därmed både fler recept och fler recept som använder flera reavaror.
 
 Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
 skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
@@ -140,7 +156,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-88 test i tio filer:
+96 test i tio filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -167,9 +183,10 @@ Plats, annars är ortssökningen vägen framåt.
   förpackningsstorlekarna kapas, att huvudordet plockas ut, och att "2 för 40"
   inte blir söktermen "för".
 - **[recipes.service.spec.ts](src/app/core/recipes.service.spec.ts)** täcker
-  betygsgränsen, att icke-mat aldrig ens slås upp, att luddiga termträffar
-  avvisas, att recepten varvas över varorna, och att bara de behållna receptens
-  bilder hämtas.
+  betygsgränsen, att icke-mat aldrig ens slås upp, termrangordningen med sina
+  gränsfall ("smörgåsgurka" är inte smör), att en vara räknas en gång även när
+  receptet taggats med flera av dess termer, att recepten varvas över varorna,
+  och att bara de behållna receptens bilder hämtas.
 - **[recipe-list.component.spec.ts](src/app/components/recipe-list.component.spec.ts)**
   täcker fem recept i taget och att korten länkar ut med `rel="noopener"`.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med

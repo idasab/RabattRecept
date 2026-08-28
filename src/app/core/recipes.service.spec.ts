@@ -124,8 +124,9 @@ describe('RecipesService', () => {
     });
   });
 
-  it('avvisar termer som inte delar namn med söktermen', (done) => {
-    // Sökningen på "kyckling" svarar gärna med orelaterade sammansättningar.
+  it('avvisar termer som är hela fraser snarare än varan', (done) => {
+    // Ordet står sist även i "Vegofärs istället för kyckling", men det är
+    // vegofärs, inte kyckling.
     tasteline.terms.set('kyckling', [
       { id: 900, name: 'Vegofärs istället för kyckling', count: 1 },
       { id: 152, name: 'Kyckling', count: 800 },
@@ -138,7 +139,21 @@ describe('RecipesService', () => {
     });
   });
 
-  it('väljer den vanligaste termen när flera passar', (done) => {
+  it('godtar en variant med ett ord framför varan', (done) => {
+    tasteline.terms.set('smör', [
+      { id: 10, name: 'smörgåsgurka', count: 900 },
+      { id: 20, name: 'saltat smör', count: 40 },
+      { id: 30, name: 'smör', count: 500 },
+    ]);
+    tasteline.found = [];
+
+    service.recipesFor([offer('1', 'Smör')]).subscribe(() => {
+      expect(tasteline.askedFor).toEqual([30, 20]);
+      done();
+    });
+  });
+
+  it('sätter den vanligaste av likvärdiga termer först', (done) => {
     tasteline.terms.set('nötfärs', [
       { id: 4886, name: 'nötfärs, mager', count: 3 },
       { id: 383, name: 'Nötfärs', count: 489 },
@@ -146,7 +161,62 @@ describe('RecipesService', () => {
     tasteline.found = [];
 
     service.recipesFor([offer('1', 'Nötfärs')]).subscribe(() => {
-      expect(tasteline.askedFor).toEqual([383]);
+      expect(tasteline.askedFor[0]).toBe(383);
+      done();
+    });
+  });
+
+  it('frågar på varans alla dugliga termer, bäst först', (done) => {
+    // Källans taxonomi är finkornig: recept taggas med "gul lök(ar)", inte "lök".
+    tasteline.terms.set('lök', [
+      { id: 100, name: 'bananschalottenlök', count: 22 },
+      { id: 200, name: 'gul lök(ar)', count: 3155 },
+      { id: 1985, name: 'lök', count: 506 },
+    ]);
+    tasteline.found = [];
+
+    service.recipesFor([offer('1', 'Lök')]).subscribe(() => {
+      // Exakt namn först, sedan varan som eget ord. Sammansättningen faller bort.
+      expect(tasteline.askedFor).toEqual([1985, 200]);
+      done();
+    });
+  });
+
+  it('avvisar sammansättningar som bara råkar innehålla ordet', (done) => {
+    // "smörgåsgurka" innehåller "smör" men är inte smör.
+    tasteline.terms.set('smör', [
+      { id: 10, name: 'smörgåsgurka', count: 900 },
+      { id: 20, name: 'saltat smör', count: 40 },
+    ]);
+    tasteline.found = [];
+
+    service.recipesFor([offer('1', 'Smör')]).subscribe(() => {
+      expect(tasteline.askedFor).toEqual([20]);
+      done();
+    });
+  });
+
+  it('räknar en vara en gång även när receptet taggats med flera av dess termer', (done) => {
+    tasteline.terms.set('lök', [
+      { id: 200, name: 'gul lök(ar)', count: 3155 },
+      { id: 1985, name: 'lök', count: 506 },
+    ]);
+    tasteline.found = [recipe(1, 'Löksoppa', 4.5, 10, [200, 1985])];
+
+    service.recipesFor([offer('1', 'Lök', 12)]).subscribe((recipes) => {
+      expect(recipes[0].matches.length).toBe(1);
+      // Namnet är den bäst rangordnade termens, oavsett vilken som träffade.
+      expect(recipes[0].matches[0].ingredient).toBe('lök');
+      done();
+    });
+  });
+
+  it('ser igenom böjningen i parentes', (done) => {
+    tasteline.terms.set('gul lök', [{ id: 200, name: 'gul lök(ar)', count: 3155 }]);
+    tasteline.found = [];
+
+    service.recipesFor([offer('1', 'Gul lök')]).subscribe(() => {
+      expect(tasteline.askedFor).toEqual([200]);
       done();
     });
   });
@@ -179,15 +249,32 @@ describe('RecipesService', () => {
     tasteline.found = [recipe(1, 'Chili con carne', 4.5, 100, [383])];
 
     service.recipesFor([offer('1', 'Nötfärs', 99)]).subscribe((recipes) => {
-      expect(recipes[0].match).toEqual({
-        ingredient: 'Nötfärs',
-        offerHeading: 'Nötfärs',
-        chainName: 'Willys',
-        price: 99,
-        currency: 'SEK',
-      });
+      expect(recipes[0].matches).toEqual([
+        {
+          ingredient: 'Nötfärs',
+          offerHeading: 'Nötfärs',
+          chainName: 'Willys',
+          price: 99,
+          currency: 'SEK',
+        },
+      ]);
       done();
     });
+  });
+
+  it('tar med alla rabatterade varor receptet använder', (done) => {
+    tasteline.terms.set('nötfärs', [{ id: 383, name: 'Nötfärs', count: 489 }]);
+    tasteline.terms.set('lök', [{ id: 400, name: 'Lök', count: 900 }]);
+    tasteline.found = [recipe(1, 'Chili con carne', 4.5, 100, [383, 400, 999])];
+
+    service
+      .recipesFor([offer('1', 'Nötfärs', 99), offer('2', 'Lök', 12)])
+      .subscribe((recipes) => {
+        // 999 är ingen av våra varor och ska inte dyka upp i sammanfattningen.
+        expect(recipes[0].matches.map((entry) => entry.ingredient)).toEqual(['Nötfärs', 'Lök']);
+        expect(recipes[0].matches.map((entry) => entry.price)).toEqual([99, 12]);
+        done();
+      });
   });
 
   it('tar receptets förstabild och slår upp bara de bilder som behövs', (done) => {

@@ -2,7 +2,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RecipeListComponent } from './recipe-list.component';
 import { Recipe } from '../core/recipes.models';
 
-function recipe(index: number): Recipe {
+function match(ingredient: string, chainName: string, price: number) {
+  return { ingredient, offerHeading: `${ingredient} 1 kg`, chainName, price, currency: 'SEK' };
+}
+
+function recipe(index: number, matches = [match('Nötfärs', 'Willys', 99)]): Recipe {
   return {
     id: index,
     title: `Recept ${index}`,
@@ -10,13 +14,7 @@ function recipe(index: number): Recipe {
     rating: 4.25,
     votes: index,
     image: null,
-    match: {
-      ingredient: 'Nötfärs',
-      offerHeading: 'Nötfärs 1 kg',
-      chainName: 'Willys',
-      price: 99,
-      currency: 'SEK',
-    },
+    matches,
   };
 }
 
@@ -27,6 +25,18 @@ describe('RecipeListComponent', () => {
     fixture.componentInstance.recipes = Array.from({ length: count }, (_, i) => recipe(i + 1));
     fixture.componentInstance.ngOnChanges();
     fixture.detectChanges();
+  }
+
+  function setRecipe(recipes: Recipe[]): void {
+    fixture.componentInstance.recipes = recipes;
+    fixture.componentInstance.ngOnChanges();
+    fixture.detectChanges();
+  }
+
+  function matchRows(): string[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.match')
+    ).map((element) => (element.textContent ?? '').replace(/\s+/g, ' ').trim());
   }
 
   function cards(): HTMLAnchorElement[] {
@@ -99,10 +109,47 @@ describe('RecipeListComponent', () => {
     expect(rating?.textContent).toContain('(1 röst)');
   });
 
-  it('visar vilken rabatterad vara receptet kom från', () => {
-    setRecipes(2);
+  it('sammanfattar varje rabatterad vara med pris och butik', () => {
+    setRecipe([
+      recipe(1, [
+        match('Nötfärs', 'Willys', 99),
+        match('Lök', 'Hemköp', 12.5),
+        match('Krossade tomater', 'Coop', 8),
+      ]),
+    ]);
 
-    const match = (fixture.nativeElement as HTMLElement).querySelector('.match');
-    expect(match?.textContent?.trim()).toBe('Nötfärs · 99 kr på Willys');
+    expect(matchRows()).toEqual([
+      'Nötfärs 99 kr på Willys',
+      'Lök 12,50 kr på Hemköp',
+      'Krossade tomater 8 kr på Coop',
+    ]);
+  });
+
+  it('räknar resten när varorna är fler än tre', () => {
+    setRecipe([
+      recipe(1, [
+        match('Nötfärs', 'Willys', 99),
+        match('Lök', 'Hemköp', 12.5),
+        match('Krossade tomater', 'Coop', 8),
+        match('Vitlök', 'Willys', 15),
+        match('Paprika', 'Coop', 20),
+      ]),
+    ]);
+
+    expect(matchRows().length).toBe(4);
+    expect(matchRows()[3]).toBe('+2 varor till');
+  });
+
+  it('skriver singular när bara en vara inte fick plats', () => {
+    setRecipe([
+      recipe(1, [
+        match('Nötfärs', 'Willys', 99),
+        match('Lök', 'Hemköp', 12.5),
+        match('Krossade tomater', 'Coop', 8),
+        match('Vitlök', 'Willys', 15),
+      ]),
+    ]);
+
+    expect(matchRows()[3]).toBe('+1 vara till');
   });
 });

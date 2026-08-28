@@ -25,6 +25,14 @@ const RECIPE_FIELDS = [
   'ingredient',
 ].join(',');
 
+/**
+ * Sökningen på termer rangordnar inte på användbarhet: "lök" ger
+ * "bananschalottenlök" och "Barilla pastasås vitlök och örter" långt före
+ * själva "lök", som dyker upp först en bit ner i listan. Därför hämtas många
+ * och rangordnas här i stället. Svaret är litet — bara id, namn och antal.
+ */
+const TERM_PAGE_SIZE = 50;
+
 export interface TastelineTerm {
   id: number;
   name: string;
@@ -62,7 +70,7 @@ export class TastelineService {
    */
   ingredients(search: string): Observable<TastelineTerm[]> {
     const params = new HttpParams({
-      fromObject: { search, per_page: 5, _fields: 'id,name,count' },
+      fromObject: { search, per_page: TERM_PAGE_SIZE, _fields: 'id,name,count' },
     });
 
     return this.http

@@ -18,5 +18,10 @@ export interface Recipe {
   rating: number;
   votes: number;
   image: string | null;
-  match: RecipeMatch;
+  /**
+   * Alla rabatterade varor receptet använder, i erbjudandenas ordning, alltså
+   * störst rabatt först. Alltid minst en — ett recept utan träff kommer aldrig
+   * med i listan.
+   */
+  matches: readonly RecipeMatch[];
 }
