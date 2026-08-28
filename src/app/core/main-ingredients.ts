@@ -90,6 +90,11 @@ const PREPARED = MAIN_INGREDIENTS.map((entry) => ({
   except: (entry.except ?? []).map(normalizeText),
 }));
 
+/** Alla huvudråvaror appen känner till, i listans ordning. */
+export function mainIngredientNames(): string[] {
+  return MAIN_INGREDIENTS.map((entry) => entry.name);
+}
+
 /**
  * Huvudråvaran ett erbjudande gäller, som sökterm, eller null när varan inte
  * är något man bygger en måltid kring.

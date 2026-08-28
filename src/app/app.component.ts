@@ -3,9 +3,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, firstValueFrom, of, switchMap } from 'rxjs';
 import { ChainFilterComponent } from './components/chain-filter.component';
+import { FoodExclusionsComponent } from './components/food-exclusions.component';
 import { PlaceSearchComponent } from './components/place-search.component';
 import { RecipeListComponent } from './components/recipe-list.component';
+import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
 import { GeocodingService } from './core/geocoding.service';
+import { mainIngredientNames } from './core/main-ingredients';
 import { LocationError, LocationService } from './core/location.service';
 import { filterOffers } from './core/offer-filter';
 import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
@@ -36,13 +39,21 @@ interface StoredSettings {
   selected: string[];
   /** Kedjorna som stjärnmärkts: alltid överst och alltid ikryssade vid start. */
   favorites: string[];
+  /** Matvaror man inte vill ha receptförslag på. */
+  excludedFoods: string[];
   place: Place | null;
 }
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ChainFilterComponent, PlaceSearchComponent, RecipeListComponent],
+  imports: [
+    CommonModule,
+    ChainFilterComponent,
+    FoodExclusionsComponent,
+    PlaceSearchComponent,
+    RecipeListComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -64,6 +75,8 @@ export class AppComponent implements OnInit {
   readonly radii = RADII;
   /** '3,5' — svenskt decimaltecken, inte punkt. */
   readonly minRating = MIN_RATING.toLocaleString('sv-SE');
+  /** Råvarorna appen känner igen, som förslag i uteslutningsfältet. */
+  readonly knownFoods = mainIngredientNames();
 
   readonly board = signal<OfferBoard | null>(null);
   readonly loading = signal(false);
@@ -74,6 +87,7 @@ export class AppComponent implements OnInit {
   readonly radiusKm = signal(5);
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly favorites = signal<ReadonlySet<string>>(new Set());
+  readonly excludedFoods = signal<readonly string[]>([]);
 
   readonly recipes = signal<readonly Recipe[]>([]);
   readonly recipesLoading = signal(false);
@@ -93,17 +107,20 @@ export class AppComponent implements OnInit {
   });
 
   /**
-   * Erbjudandena från de ikryssade kedjorna, störst rabatt först. De visas
-   * inte längre utan ligger bakom recepten: det är de här varorna som är
-   * söktermerna. Störst rabatt först är därför inte pynt utan urvalsordning —
-   * det är de varorna det är värt att laga mat av.
+   * Erbjudandena från de ikryssade kedjorna, störst rabatt först, minus det
+   * man valt bort. De visas inte längre utan ligger bakom recepten: det är de
+   * här varorna som är söktermerna. Störst rabatt först är därför inte pynt
+   * utan urvalsordning — det är de varorna det är värt att laga mat av.
    */
   readonly selectedOffers = computed<readonly Offer[]>(() =>
-    filterOffers(this.board()?.offers ?? [], {
-      chainIds: this.selected(),
-      query: '',
-      sort: 'discount',
-    })
+    withoutExcluded(
+      filterOffers(this.board()?.offers ?? [], {
+        chainIds: this.selected(),
+        query: '',
+        sort: 'discount',
+      }),
+      this.excludedFoods()
+    )
   );
 
   readonly fetchedLabel = computed(() => {
@@ -149,6 +166,7 @@ export class AppComponent implements OnInit {
       this.radiusKm.set(settings.radiusKm);
       this.selected.set(new Set(settings.selected));
       this.favorites.set(new Set(settings.favorites));
+      this.excludedFoods.set(settings.excludedFoods);
     }
 
     // Det sparade underlaget visas direkt, så att appen har innehåll redan
@@ -244,6 +262,18 @@ export class AppComponent implements OnInit {
     this.saveSettings();
   }
 
+  excludeFood(entry: string): void {
+    this.excludedFoods.set(addExclusion(this.excludedFoods(), entry));
+    this.saveSettings();
+    this.requestRecipes();
+  }
+
+  allowFood(entry: string): void {
+    this.excludedFoods.set(removeExclusion(this.excludedFoods(), entry));
+    this.saveSettings();
+    this.requestRecipes();
+  }
+
   selectAllChains(): void {
     this.selected.set(new Set(this.chains().map((chain) => chain.id)));
     this.saveSettings();
@@ -323,6 +353,7 @@ export class AppComponent implements OnInit {
       radiusKm: this.radiusKm(),
       selected: [...this.selected()],
       favorites: [...this.favorites()],
+      excludedFoods: [...this.excludedFoods()],
       place: this.board()?.place ?? null,
     };
 
@@ -338,7 +369,11 @@ export class AppComponent implements OnInit {
     if (!stored || !RADII.includes(stored.radiusKm) || !Array.isArray(stored.selected)) {
       return null;
     }
-    return { ...stored, favorites: stored.favorites ?? [] };
+    return {
+      ...stored,
+      favorites: stored.favorites ?? [],
+      excludedFoods: stored.excludedFoods ?? [],
+    };
   }
 
   private readBoard(): OfferBoard | null {

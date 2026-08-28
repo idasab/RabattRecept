@@ -10,12 +10,12 @@ import { RecipesService } from './core/recipes.service';
 
 const PLACE: Place = { name: 'Testköping', latitude: 59, longitude: 18 };
 
-function offer(id: string, chainId: string, chainName: string): Offer {
+function offer(id: string, chainId: string, chainName: string, heading = `Vara ${id}`): Offer {
   return {
     id,
     chainId,
     chainName,
-    heading: `Vara ${id}`,
+    heading,
     description: '',
     price: 10,
     prePrice: null,
@@ -49,7 +49,10 @@ const BOARD: OfferBoard = {
       distanceKm: 1.2,
     },
   ],
-  offers: [offer('1', 'willys', 'Willys'), offer('2', 'coop', 'Coop')],
+  offers: [
+    offer('1', 'willys', 'Willys', 'Kycklinglårfilé'),
+    offer('2', 'coop', 'Coop', 'Fläskytterfilé'),
+  ],
   fetchedAt: '2026-08-28T07:00:00.000Z',
 };
 
@@ -239,6 +242,40 @@ describe('AppComponent', () => {
 
     expect(fixture.componentInstance.favorites().size).toBe(0);
     expect(chainNames()).toEqual(['Willys', 'Coop']);
+  });
+
+  it('utesluter varor man valt bort ur underlaget för recepten', async () => {
+    await create();
+    expect(fixture.componentInstance.selectedOffers().length).toBe(2);
+
+    fixture.componentInstance.excludeFood('fläsk');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.selectedOffers().map((entry) => entry.heading)).toEqual([
+      'Kycklinglårfilé',
+    ]);
+  });
+
+  it('kommer ihåg de uteslutna varorna till nästa besök', async () => {
+    await create();
+    fixture.componentInstance.excludeFood('Fläsk');
+
+    await restart();
+
+    expect(fixture.componentInstance.excludedFoods()).toEqual(['Fläsk']);
+    expect(fixture.componentInstance.selectedOffers().length).toBe(1);
+  });
+
+  it('tar tillbaka varan när uteslutningen ångras', async () => {
+    await create();
+    fixture.componentInstance.excludeFood('fläsk');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.selectedOffers().length).toBe(1);
+
+    fixture.componentInstance.allowFood('FLÄSK');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.selectedOffers().length).toBe(2);
   });
 
   it('erbjuder ortssökning när platsen nekas', async () => {

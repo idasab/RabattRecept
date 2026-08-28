@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 101 stycken:
+Appen svarar på http://localhost:4200. Testerna, 127 stycken:
 
 ```bash
 npm run test:ci
@@ -66,15 +66,17 @@ npm run lint
    sker på kedjans domän i
    [`grocery-brands.ts`](src/app/core/grocery-brands.ts) — butiksformaten byter
    namn medan `ica.se` står still.
-4. **Avståndet.** Butikerna hämtas parallellt med erbjudandena och ger varje
+4. **Uteslutna varor faller bort.** Det man angett under Uteslut matvaror
+   sållas ur underlaget innan söktermerna väljs.
+5. **Avståndet.** Butikerna hämtas parallellt med erbjudandena och ger varje
    kedja avståndet till sin närmaste butik, räknat med haversine i
    [`distance.ts`](src/app/core/distance.ts). Misslyckas den hämtningen står
    kedjorna utan avstånd i stället för att hela sidan blir ett fel.
-5. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd och antal
+6. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd och antal
    erbjudanden. Fyra rader visas från början och "Visa fler" lägger till fyra i
    taget. Erbjudandena hämtas en gång per plats och radie; kryssrutorna arbetar
    sedan på den redan hämtade listan.
-6. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
+7. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
    rabatt först, blir söktermer. Fem recept visas åt gången.
 
 ## Recepten
@@ -131,6 +133,21 @@ Fältfiltrering (`_fields`) är inte en detalj utan en förutsättning: utan den
 skickar API:et hela receptet med steg, näringsvärden och ingredienslistor, 165
 kB för tjugo recept i stället för 7 kB.
 
+## Uteslutna matvaror
+
+Under **Uteslut matvaror** anger man varor man inte vill ha receptförslag på —
+för allergier, för att man inte äter dem, eller för att man tröttnat. Listan
+sparas mellan besöken och fältet föreslår de råvaror appen känner igen.
+
+Uteslutningen görs på **erbjudandet**, inte på receptet. Är fläsk uteslutet
+blir fläskfilén aldrig en sökterm, och inga rätter som byggs på fläsk föreslås.
+Ett recept kan fortfarande innehålla fläsk i en biroll: appen läser inte
+recepten, den väljer bara vad den söker på.
+
+Matchningen godtar ordets början och slut, precis som råvaruigenkänningen. Det
+gör att "fläsk" fångar både "Fläskytterfilé" och "Bacon/Stekfläsk" — vilket är
+rätt, för bacon är fläsk — men också att ett kort ord tar med mer än man tror.
+
 ## Favoriter
 
 Stjärnan bredvid en kedja gör den till favorit. Favoriter ligger alltid överst
@@ -164,7 +181,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-101 test i elva filer:
+127 test i tretton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -201,6 +218,13 @@ Plats, annars är ortssökningen vägen framåt.
   och att bara de behållna receptens bilder hämtas.
 - **[recipe-list.component.spec.ts](src/app/components/recipe-list.component.spec.ts)**
   täcker fem recept i taget och att korten länkar ut med `rel="noopener"`.
+- **[food-exclusions.spec.ts](src/app/core/food-exclusions.spec.ts)** täcker
+  uteslutningarna: att ordet fångas i början och slutet av ett sammansatt
+  varunamn, att det matchar via råvaran när rubriken stavar annorlunda, och att
+  samma vara inte kan läggas till två gånger.
+- **[food-exclusions.component.spec.ts](src/app/components/food-exclusions.component.spec.ts)**
+  täcker inställningen: att den börjar hopfälld, räknar de uteslutna varorna,
+  tömmer fältet efter tillägg och inte skickar tomma rader.
 - **[app.component.spec.ts](src/app/app.component.spec.ts)** kör appen med
   stoppade tjänster och kontrollerar det som knyter ihop den: att en urkryssad
   kedja försvinner ur listan, att en favorit lyfts överst och kryssas i, att

@@ -71,6 +71,14 @@
     (clear)="clearChains()"
   ></app-chain-filter>
 
+  <app-food-exclusions
+    *ngIf="board()"
+    [excluded]="excludedFoods()"
+    [suggestions]="knownFoods"
+    (add)="excludeFood($event)"
+    (remove)="allowFood($event)"
+  ></app-food-exclusions>
+
   <section class="recipes-head" *ngIf="board()">
     <h2 class="card-heading">Recept på det som är billigt</h2>
     <p class="lead">
