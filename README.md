@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 207 stycken:
+Appen svarar på http://localhost:4200. Testerna, 208 stycken:
 
 ```bash
 npm run test:ci
@@ -184,9 +184,13 @@ flera megabyte.
 
 ## Inställningar
 
-Kugghjulet uppe till höger öppnar inställningsmenyn. Antalet påslagna
-inställningar står som en siffra på kugghjulet, så att något som påverkar hela
-receptlistan inte kan glömmas bort bakom en stängd meny.
+Kugghjulet uppe till höger öppnar inställningsmenyn. Siffran på kugghjulet
+räknar **påslagna inställningar**, inte uteslutna varor: tre uteslutna varor
+plus svenskfiltret blir fyra. Båda ändrar hela receptlistan och ingen av dem
+syns när menyn är stängd, vilket är hela poängen med siffran.
+
+Siffran finns bara i grafiken, så knappens upplästa etikett säger antalet i
+klartext — "Inställningar, 4 aktiva".
 
 Menyn stängs med Esc, med krysset eller genom att man trycker utanför. Fokus
 flyttas till panelen när den öppnas — inte till textfältet, för då fäller
@@ -320,7 +324,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-207 test i arton filer:
+208 test i arton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att

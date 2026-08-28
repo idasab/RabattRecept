@@ -171,10 +171,27 @@ export class AppComponent implements OnInit {
     return counts;
   });
 
-  /** Hur många inställningar som är påslagna, som siffra på kugghjulet. */
+  /**
+   * Hur många inställningar som är påslagna, som siffra på kugghjulet. Både
+   * uteslutna varor och svenskfiltret räknas, för båda ändrar hela
+   * receptlistan och ingen av dem syns när menyn är stängd.
+   */
   readonly settingsCount = computed(
     () => this.excludedFoods().length + (this.onlySwedishMeat() ? 1 : 0)
   );
+
+  /**
+   * Kugghjulets upplästa etikett. Siffran på knappen säger ingenting i en
+   * skärmläsare, så antalet måste stå i klartext.
+   */
+  readonly settingsLabel = computed(() => {
+    const count = this.settingsCount();
+    if (!count) {
+      return 'Inställningar';
+    }
+
+    return `Inställningar, ${count} ${count === 1 ? 'aktiv' : 'aktiva'}`;
+  });
 
   readonly fetchedLabel = computed(() => {
     const at = this.board()?.fetchedAt;

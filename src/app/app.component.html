@@ -36,7 +36,7 @@
         #settingsButton
         type="button"
         class="icon settings"
-        aria-label="Inställningar"
+        [attr.aria-label]="settingsLabel()"
         aria-haspopup="dialog"
         [attr.aria-expanded]="settingsOpen()"
         (click)="openSettings()"
@@ -58,7 +58,9 @@
             stroke-linejoin="round"
           />
         </svg>
-        <span class="badge" *ngIf="settingsCount()">{{ settingsCount() }}</span>
+        <span class="badge" aria-hidden="true" *ngIf="settingsCount()">
+          {{ settingsCount() }}
+        </span>
       </button>
     </div>
   </header>

@@ -324,7 +324,22 @@ describe('AppComponent', () => {
     fixture.componentInstance.chooseSwedishMeat(true);
     fixture.detectChanges();
 
+    // Både uteslutna varor och svenskfiltret räknas — båda ändrar listan.
     expect(element('.badge')?.textContent?.trim()).toBe('2');
+  });
+
+  it('säger i klartext hur många inställningar som är aktiva', async () => {
+    await create();
+    const gear = () => element<HTMLButtonElement>('.icon.settings');
+    expect(gear()?.getAttribute('aria-label')).toBe('Inställningar');
+
+    fixture.componentInstance.excludeFood('fläsk');
+    fixture.detectChanges();
+    expect(gear()?.getAttribute('aria-label')).toBe('Inställningar, 1 aktiv');
+
+    fixture.componentInstance.chooseSwedishMeat(true);
+    fixture.detectChanges();
+    expect(gear()?.getAttribute('aria-label')).toBe('Inställningar, 2 aktiva');
   });
 
   it('kräver svenskmärkning av kött när filtret är på', async () => {
