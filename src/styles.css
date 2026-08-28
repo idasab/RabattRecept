@@ -1,0 +1,89 @@
+/*
+ * Ljus, dämpad grundpalett. Kedjornas egna färger är starka och många, så de
+ * får bara synas som små prickar — ytorna hålls neutrala för att listan ska gå
+ * att läsa när tolv kedjor visas samtidigt.
+ */
+:root {
+  color-scheme: light;
+
+  --bg: #f3f2ef;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-soft: rgba(28, 30, 34, 0.04);
+  --border: rgba(28, 30, 34, 0.09);
+  --border-strong: rgba(28, 30, 34, 0.22);
+  --text: #1c1e22;
+  --text-muted: rgba(28, 30, 34, 0.62);
+  --text-faint: rgba(28, 30, 34, 0.42);
+  --accent: #6b7f96;
+  --shadow: 0 14px 34px rgba(28, 30, 34, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  /* Ingen gummistuds när appen ligger på hemskärmen — det avslöjar webbsidan. */
+  overscroll-behavior-y: none;
+}
+
+app-root {
+  display: block;
+  min-height: 100%;
+}
+
+/* Delad kortyta: definieras globalt så både värd och barnkomponenter når den. */
+.card {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Genomgående rubrikstil för korten. */
+.card-heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Läses av skärmläsare men syns inte. Används för live-regionen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 2px;
+}

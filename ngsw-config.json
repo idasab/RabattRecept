@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "appskal",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/favicon.ico", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js"]
+      }
+    },
+    {
+      "name": "tillgangar",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": ["/assets/**", "/*.(png|ico|svg|woff2)"]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "erbjudanden",
+      "urls": ["https://squid-api.tjek.com/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 40,
+        "maxAge": "1d",
+        "timeout": "6s"
+      }
+    },
+    {
+      "name": "produktbilder",
+      "urls": ["https://image-transformer-api.tjek.com/**"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 400,
+        "maxAge": "7d"
+      }
+    }
+  ]
+}
