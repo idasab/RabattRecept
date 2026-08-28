@@ -79,14 +79,26 @@
   </p>
 
   <section class="card place">
-    <h2 class="card-heading">Plats</h2>
+    <header class="head">
+      <h2 class="card-heading">Plats</h2>
+      <button type="button" class="locate" [disabled]="loading()" (click)="useMyLocation()">
+        Min plats
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 21.2c4.2-4 6.3-7.2 6.3-9.9a6.3 6.3 0 1 0-12.6 0c0 2.7 2.1 5.9 6.3 9.9z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="11" r="2.4" fill="currentColor" />
+        </svg>
+      </button>
+    </header>
+
     <app-place-search (picked)="choosePlace($event)"></app-place-search>
 
     <div class="place-row">
-      <button type="button" class="ghost" [disabled]="loading()" (click)="useMyLocation()">
-        Använd min plats
-      </button>
-
       <div class="chips" role="group" aria-label="Avstånd från platsen">
         <button
           *ngFor="let km of radii"

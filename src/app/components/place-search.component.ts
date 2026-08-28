@@ -33,6 +33,7 @@ import { Place } from '../core/offers.models';
         >
           ✕
         </button>
+
       </label>
 
       <ul *ngIf="results().length" class="results">
@@ -54,8 +55,8 @@ import { Place } from '../core/offers.models';
       .field {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 9px 14px;
+        gap: 6px;
+        padding: 6px 6px 6px 13px;
         border: 1px solid var(--border);
         border-radius: 12px;
         background: var(--surface-soft);
@@ -69,6 +70,8 @@ import { Place } from '../core/offers.models';
       input {
         flex: 1;
         min-width: 0;
+        /* Håller fältet lika högt oavsett om rensa-knappen visas. */
+        height: 28px;
         border: 0;
         background: none;
         color: inherit;
@@ -87,7 +90,14 @@ import { Place } from '../core/offers.models';
       }
 
       .clear {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
         border: 0;
+        border-radius: 50%;
         background: none;
         color: var(--text-faint);
         font-size: 12px;

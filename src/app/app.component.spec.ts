@@ -377,6 +377,19 @@ describe('AppComponent', () => {
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 
+  it('har en platsknapp på rubrikraden som hämtar positionen', async () => {
+    location.result = { latitude: 59, longitude: 18 };
+    await create();
+
+    const button = element<HTMLButtonElement>('.place .head .locate');
+    expect(button?.textContent?.trim()).toContain('Min plats');
+
+    // Knappen låses medan hämtningen pågår, så den inte trycks två gånger.
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+    expect(element<HTMLButtonElement>('.place .head .locate')?.disabled).toBeTrue();
+  });
+
   it('erbjuder ortssökning när platsen nekas', async () => {
     location.result = new LocationError('denied', 'Appen fick inte tillgång till din plats.');
 

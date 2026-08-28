@@ -124,35 +124,67 @@ h1 {
 
 .place {
   display: grid;
+  gap: 10px;
+}
+
+/* Rubriken och platsknappen på samma rad, som i kedjekortet. */
+.place .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+/* Fylld som ett valt kilometerchip, så att det syns att den går att trycka.
+   En textlänk bredvid en versalrubrik läses lätt som ännu en rubrik. */
+.locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Negativ marginal så knappen får sin höjd utan att rubrikraden växer. */
+  margin: -4px 0;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--accent), #e0642f);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.locate:disabled {
+  background: none;
+  border-color: var(--border);
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.locate svg {
+  width: 14px;
+  height: 14px;
 }
 
 .place-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.ghost {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ghost:disabled {
-  color: var(--text-faint);
-  cursor: default;
 }
 
 .chips {
   display: flex;
   gap: 5px;
+}
+
+/* Avståndsknapparna får dela bredden när platsknappen inte längre tar plats. */
+.place-row .chips {
+  flex: 1;
+}
+
+.place-row .chip {
+  flex: 1;
+  text-align: center;
 }
 
 .chip {
