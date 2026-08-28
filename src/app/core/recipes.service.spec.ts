@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, of } from 'rxjs';
 import { Offer } from './offers.models';
-import { MIN_RATING, RecipesService } from './recipes.service';
+import { MIN_RATING, MIN_VOTES, RecipesService } from './recipes.service';
 import { TastelineRecipe, TastelineService, TastelineTerm } from './tasteline.service';
 
 function offer(id: string, heading: string, price = 20): Offer {
@@ -98,12 +98,31 @@ describe('RecipesService', () => {
     });
   });
 
+  it('visar bara recept som fler än fem har röstat på', (done) => {
+    // Ett femma från en enda röst säger inget om receptet.
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.found = [
+      recipe(1, 'En enda röst', 5, 1, [5]),
+      recipe(2, 'Precis för få', 4.8, MIN_VOTES, [5]),
+      recipe(3, 'Precis tillräckligt', 4.2, MIN_VOTES + 1, [5]),
+      recipe(4, 'Väl beprövat', 4.1, 453, [5]),
+    ];
+
+    service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {
+      expect(recipes.map((entry) => entry.title)).toEqual([
+        'Precis tillräckligt',
+        'Väl beprövat',
+      ]);
+      done();
+    });
+  });
+
   it('sorterar högsta betyg först och flest röster vid lika betyg', (done) => {
     tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
     tasteline.found = [
-      recipe(1, 'Fyra, få röster', 4, 3, [5]),
+      recipe(1, 'Fyra, få röster', 4, 6, [5]),
       recipe(2, 'Fyra, många röster', 4, 900, [5]),
-      recipe(3, 'Fem', 5, 1, [5]),
+      recipe(3, 'Fem', 5, 8, [5]),
     ];
 
     service.recipesFor([offer('1', 'Laxloin')]).subscribe((recipes) => {

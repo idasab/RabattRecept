@@ -30,7 +30,7 @@ import { filterOffers } from './core/offer-filter';
 import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
 import { Recipe } from './core/recipes.models';
-import { MIN_RATING, RecipesService } from './core/recipes.service';
+import { MIN_RATING, MIN_VOTES, RecipesService } from './core/recipes.service';
 
 /**
  * Versionen i nycklarna gör att sparat från en äldre datamodell ignoreras.
@@ -96,6 +96,7 @@ export class AppComponent implements OnInit {
   readonly radii = RADII;
   /** '3,5' — svenskt decimaltecken, inte punkt. */
   readonly minRating = MIN_RATING.toLocaleString('sv-SE');
+  readonly minVotes = MIN_VOTES;
   /** Råvarorna appen känner igen, som förslag i uteslutningsfältet. */
   readonly knownFoods = mainIngredientNames();
 

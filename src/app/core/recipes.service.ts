@@ -10,6 +10,12 @@ import { TastelineRecipe, TastelineService, TastelineTerm } from './tasteline.se
 export const MIN_RATING = 3.5;
 
 /**
+ * Kravet: betyget måste vila på fler röster än så här. Ett femma från en enda
+ * röst säger ingenting om receptet, bara om den som råkade rösta.
+ */
+export const MIN_VOTES = 5;
+
+/**
  * Hur många rabatterade varor som får bli söktermer. Varje term kostar ett
  * anrop, och tio varor ger gott om recept att välja bland.
  */
@@ -41,7 +47,8 @@ const MIN_TERM_RANK = 2;
  *
  * Kedjan är: erbjudandenas rubriker blir söktermer, receptkällan får avgöra
  * vilka av dem som är ingredienser — den känner inte igen "toalettpapper" —
- * och recepten som använder ingredienserna hämtas och sållas på betyg.
+ * och recepten som använder ingredienserna hämtas och sållas på betyg och på
+ * hur många som röstat.
  */
 @Injectable({ providedIn: 'root' })
 export class RecipesService {
@@ -122,8 +129,10 @@ export class RecipesService {
     const found: Found[] = [];
 
     for (const entry of raw) {
-      const rating = Number(entry.meta?.tasteline_recipe_data?.recipe?.rating?.rating ?? 0);
-      if (!(rating >= MIN_RATING)) {
+      const score = entry.meta?.tasteline_recipe_data?.recipe?.rating;
+      const rating = Number(score?.rating ?? 0);
+      const votes = Number(score?.votes ?? 0);
+      if (!(rating >= MIN_RATING) || !(votes > MIN_VOTES)) {
         continue;
       }
 
@@ -148,7 +157,7 @@ export class RecipesService {
           title: decodeTitle(entry.title?.rendered ?? ''),
           url: entry.link,
           rating,
-          votes: Number(entry.meta?.tasteline_recipe_data?.recipe?.rating?.votes ?? 0),
+          votes,
           durationMinutes: toMinutes(
             entry.meta?.tasteline_recipe_data?.recipe?.totalDuration
           ),

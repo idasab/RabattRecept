@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-Appen svarar på http://localhost:4200. Testerna, 183 stycken:
+Appen svarar på http://localhost:4200. Testerna, 184 stycken:
 
 ```bash
 npm run test:ci
@@ -113,8 +113,10 @@ Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.servic
    rangordnade termer, inte bara en: ett recept som använder lök taggas med
    "gul lök(ar)", aldrig med "lök", så en enda term per vara hittar långt
    färre recept.
-3. Recepten hämtas i ett anrop för alla ingredienser och sållas på betyg: minst
-   3,5 av 5. Recept utan betyg faller bort på samma villkor.
+3. Recepten hämtas i ett anrop för alla ingredienser och sållas på betyg:
+   **minst 3,5 av 5, från fler än 5 röster.** Betygskravet ensamt räcker inte —
+   ett femma från en enda röst säger ingenting om receptet, bara om den som
+   råkade rösta. Recept helt utan betyg faller bort på samma villkor.
 4. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
    ingrediens kan ha dussintals högt betygsatta recept och skulle annars fylla
    hela första sidan med blåbär — poängen är att visa vad man kan laga av rean,
@@ -254,7 +256,7 @@ Plats, annars är ortssökningen vägen framåt.
 
 ## Tester
 
-183 test i sexton filer:
+184 test i sexton filer:
 
 - **[grocery-brands.spec.ts](src/app/core/grocery-brands.spec.ts)** täcker
   sållningen: att ICA:s och Coops alla butiksformat hittar rätt varumärke, att
@@ -285,7 +287,8 @@ Plats, annars är ortssökningen vägen framåt.
   täcker urvalet av söktermer: att bara huvudråvaror räknas mot gränsen, att
   samma råvara tas en gång, och att erbjudandenas ordning behålls.
 - **[recipes.service.spec.ts](src/app/core/recipes.service.spec.ts)** täcker
-  betygsgränsen, att icke-mat aldrig ens slås upp, termrangordningen med sina
+  betygsgränsen och röstgränsen med sina gränsfall, att icke-mat aldrig ens
+  slås upp, termrangordningen med sina
   gränsfall ("smörgåsgurka" är inte smör), att en vara räknas en gång även när
   receptet taggats med flera av dess termer, att recepten varvas över varorna,
   och att bara de behållna receptens bilder hämtas.
@@ -340,6 +343,6 @@ rabattsiffra. API:et är öppet men odokumenterat; går det sönder är det
 
 Receptmatchningen är en gissning, inte en varukoppling. Appen vet inte att
 butikens "Kycklinglårfilé" och Tastelines "Kyckling" är samma sak i annat än
-namnet, så ett recept kan råka föreslås på fel vara. Betygen är Tastelines
-egna besökarbetyg och säger inget om hur många som röstat — antalet röster
-står i listan så att man kan väga in det själv.
+namnet, så ett recept kan råka föreslås på fel vara. Betygen är Tastelines egna
+besökarbetyg; appen kräver fler än fem röster, och antalet står i listan så att
+man kan väga in det själv därutöver.
