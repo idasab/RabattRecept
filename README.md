@@ -419,13 +419,14 @@ Tre nivåer, med olika uppgifter:
 | Nivå | Typsnitt | Var |
 | --- | --- | --- |
 | Störst | **Permanent Marker** | Ortnamnet, inställningsmenyns titel |
-| Etiketter | **Commissioner** | "PLATS", "KEDJOR NÄRA DIG", "LAGA AV VECKANS REA" |
-| Allt annat | Systemfonten | Recepttitlar, brödtext, priser och siffror |
+| Rubriker | **Commissioner** | Recepttitlarna, "PLATS", "KEDJOR NÄRA DIG", "LAGA AV VECKANS REA" |
+| Allt annat | Systemfonten | Brödtext, priser och siffror |
 
-Markörfonten är för tung för brödtext och för siffror, och Commissioner är vald
-för att den är smal och lågkontrastig och håller ihop även spärrad i versaler.
-Systemfonten får bära resten: den är den enda som redan finns på enheten och
-alltså den snabbaste, och recepttitlarna är många.
+Markörfonten är för tung för brödtext och för siffror. Commissioner är vald för
+att den är smal och lågkontrastig, håller ihop även spärrad i versaler och
+fungerar lika bra i en recepttitel som i en etikett — det är den som knyter
+ihop korten med kortrubrikerna. Systemfonten får bära brödtext och siffror, där
+den redan gör sitt jobb och inte kostar något att ladda.
 
 Fonterna ligger i [src/assets/fonts](src/assets/fonts) i stället för att länkas
 från Google. En app som ska öppnas från hemskärmen ska inte behöva vänta på ett

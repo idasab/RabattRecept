@@ -152,10 +152,13 @@ const RATING = new Intl.NumberFormat('sv-SE', {
          höga. Receptnamn kan vara mycket långa: "Shawarmarostad kålrot i
          pitabröd med hummus och grön tahinisås". */
       .title {
+        font-family: var(--font-label);
         font-size: 16px;
         font-weight: 700;
         line-height: 1.25;
-        letter-spacing: -0.2px;
+        /* Commissioner är redan smal, så den negativa spärren som passade
+           systemfonten gör den trång här. */
+        letter-spacing: 0;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
