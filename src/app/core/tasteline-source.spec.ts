@@ -29,13 +29,15 @@ function recipe(
   votes: number,
   ingredientIds: number[],
   attachmentId?: number,
-  totalDuration = 1800
+  totalDuration = 1800,
+  occasionIds: number[] = []
 ): TastelineRecipe {
   return {
     id,
     link: `https://www.tasteline.com/recept/${id}/`,
     title: { rendered: title },
     ingredient: ingredientIds,
+    recipe_occasion: occasionIds,
     meta: {
       tasteline_recipe_data: {
         recipe: { rating: { rating, votes }, totalDuration },
@@ -50,6 +52,7 @@ function recipe(
 
 class StubTastelineService {
   terms = new Map<string, TastelineTerm[]>();
+  occasionTerms: TastelineTerm[] = [];
   found: TastelineRecipe[] = [];
   imageUrls = new Map<number, string>();
   askedFor: number[] = [];
@@ -59,6 +62,10 @@ class StubTastelineService {
   ingredientsFor(searches: readonly string[]): Observable<Map<string, TastelineTerm[]>> {
     this.askedForTerms = [...searches];
     return of(new Map(searches.map((search) => [search, this.terms.get(search) ?? []])));
+  }
+
+  occasions(): Observable<TastelineTerm[]> {
+    return of(this.occasionTerms);
   }
 
   recipes(termIds: readonly number[]): Observable<TastelineRecipe[]> {
@@ -331,6 +338,50 @@ describe('TastelineSource', () => {
         expect(recipes.map((entry) => entry.title)).toEqual(['Kycklinggryta']);
         done();
       });
+  });
+
+  it('kastar recept som är taggade med en högtid som inte är nu', (done) => {
+    // Källans egen tagg är den säkraste signalen: rubriken kan vara neutral.
+    tasteline.terms.set('Fläskkarré', [{ id: 9, name: 'Fläskkarré', count: 97 }]);
+    tasteline.occasionTerms = [
+      { id: 70, name: 'Jul', count: 1261 },
+      { id: 64, name: 'Kräftskiva', count: 194 },
+    ];
+    tasteline.found = [
+      recipe(1, 'Janssons frestelse', 4.8, 100, [9], undefined, 1800, [70]),
+      recipe(2, 'Karrégryta', 4.7, 100, [9], undefined, 1800, []),
+    ];
+
+    service
+      .recipesFor(candidates(['Fläskkarré', offer('1', 'Fläskkarré')]))
+      .subscribe((recipes) => {
+        // Testet körs året runt, så julen är bortsållad utom i november och
+        // december. Karrégrytan ska alltid vara kvar.
+        const månad = new Date().getMonth() + 1;
+        const väntat = [11, 12].includes(månad)
+          ? ['Janssons frestelse', 'Karrégryta']
+          : ['Karrégryta'];
+        expect(recipes.map((entry) => entry.title)).toEqual(väntat);
+        done();
+      });
+  });
+
+  it('kastar recept vars rubrik avslöjar högtiden, som nät', (done) => {
+    tasteline.terms.set('Lax', [{ id: 5, name: 'Lax', count: 941 }]);
+    tasteline.occasionTerms = [];
+    tasteline.found = [
+      recipe(1, 'Gravad lax till julbordet', 4.8, 100, [5]),
+      recipe(2, 'Gravad lax', 4.7, 100, [5]),
+    ];
+
+    service.recipesFor(candidates(['Lax', offer('1', 'Laxloin')])).subscribe((recipes) => {
+      const månad = new Date().getMonth() + 1;
+      const väntat = [11, 12].includes(månad)
+        ? ['Gravad lax till julbordet', 'Gravad lax']
+        : ['Gravad lax'];
+      expect(recipes.map((entry) => entry.title)).toEqual(väntat);
+      done();
+    });
   });
 
   it('svarar tomt utan erbjudanden, utan att fråga källan', (done) => {

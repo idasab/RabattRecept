@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, switchMap } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { excludedBy } from './food-exclusions';
 import { Candidate } from './ingredient-candidates';
 import { RecipeSource, passesRating } from './recipe-source';
 import { Recipe } from './recipes.models';
+import { isOutOfSeason } from './seasons';
 import { TastelineRecipe, TastelineService, TastelineTerm } from './tasteline.service';
 import { normalizeText } from './text';
 
@@ -60,18 +61,24 @@ export class TastelineSource implements RecipeSource {
     // den andra för att kasta dem.
     const searches = [...candidates.map((candidate) => candidate.term), ...excluded];
 
-    return this.tasteline.ingredientsFor(searches).pipe(
-      switchMap((terms) => {
+    return forkJoin({
+      terms: this.tasteline.ingredientsFor(searches),
+      occasions: this.tasteline.occasions(),
+    }).pipe(
+      switchMap(({ terms, occasions }) => {
         const matched = this.matchTerms(candidates, terms);
         if (!matched.size) {
           return of([] as Recipe[]);
         }
 
         const banned = bannedTerms(excluded, terms);
+        const wrongSeason = outOfSeasonOccasions(occasions);
 
-        return this.tasteline
-          .recipes([...matched.keys()], RECIPE_LIMIT)
-          .pipe(switchMap((raw) => this.withImages(this.toFound(raw, matched, banned, excluded))));
+        return this.tasteline.recipes([...matched.keys()], RECIPE_LIMIT).pipe(
+          switchMap((raw) =>
+            this.withImages(this.toFound(raw, matched, banned, excluded, wrongSeason))
+          )
+        );
       })
     );
   }
@@ -125,7 +132,8 @@ export class TastelineSource implements RecipeSource {
     raw: readonly TastelineRecipe[],
     matched: Map<number, MatchedCandidate>,
     banned: ReadonlySet<number>,
-    excluded: readonly string[]
+    excluded: readonly string[],
+    wrongSeason: ReadonlySet<number>
   ): Found[] {
     const found: Found[] = [];
 
@@ -135,6 +143,13 @@ export class TastelineSource implements RecipeSource {
       // uteslutet, även om receptet hittades på laxrean.
       const carries = (entry.ingredient ?? []).some((id) => banned.has(id));
       if (carries || excludedBy([entry.title?.rendered ?? ''], excluded)) {
+        continue;
+      }
+
+      // Fel årstid: känns igen på receptets egna tillfällestaggar, och som nät
+      // på rubriken när taggen saknas.
+      const fromWrongSeason = (entry.recipe_occasion ?? []).some((id) => wrongSeason.has(id));
+      if (fromWrongSeason || isOutOfSeason(entry.title?.rendered ?? '')) {
         continue;
       }
 
@@ -202,6 +217,25 @@ export class TastelineSource implements RecipeSource {
       )
     );
   }
+}
+
+/**
+ * Tillfällena som hör till en annan del av året, som term-id.
+ *
+ * Källan taggar recepten med sina tillfällen — Jul, Julgodis, Påskmat — och
+ * det är den säkraste signalen: ett julrecept med en neutral rubrik fångas
+ * ändå. Namnen tolkas av seasons.ts.
+ */
+function outOfSeasonOccasions(occasions: readonly TastelineTerm[]): Set<number> {
+  const wrong = new Set<number>();
+
+  for (const occasion of occasions) {
+    if (isOutOfSeason(occasion.name)) {
+      wrong.add(occasion.id);
+    }
+  }
+
+  return wrong;
 }
 
 /**

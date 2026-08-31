@@ -4,6 +4,7 @@ import { excludedBy } from './food-exclusions';
 import { Candidate } from './ingredient-candidates';
 import { RecipeSource, passesRating } from './recipe-source';
 import { Recipe, RecipeMatch } from './recipes.models';
+import { isOutOfSeason } from './seasons';
 import { normalizeText } from './text';
 import { ZetaRecipe, ZetaService, ingredientNamesOf, ratingOf } from './zeta.service';
 
@@ -55,6 +56,11 @@ export class ZetaSource implements RecipeSource {
         // Zeta har ingredienslistan, så uteslutningen kan prövas mot vad
         // receptet faktiskt innehåller och inte bara mot vad det heter.
         if (excludedBy([raw.title?.rendered ?? '', ...ingredientNamesOf(raw)], excluded)) {
+          continue;
+        }
+
+        // Zeta saknar tillfällestaggar, så årstiden kan bara läsas ur rubriken.
+        if (isOutOfSeason(raw.title?.rendered ?? '')) {
           continue;
         }
 

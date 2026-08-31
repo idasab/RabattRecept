@@ -207,6 +207,22 @@ describe('ZetaSource', () => {
       });
   });
 
+  it('kastar recept vars rubrik hör till en annan årstid', (done) => {
+    zeta.results.set('Lax', [
+      zetaRecipe(1, 'Gravad lax till julbordet', 10, 45, ['lax']),
+      zetaRecipe(2, 'Gravad lax', 10, 45, ['lax']),
+    ]);
+
+    source.recipesFor(candidates(['Lax', offer('1', 'Laxloin')])).subscribe((r) => {
+      const månad = new Date().getMonth() + 1;
+      const väntat = [11, 12].includes(månad)
+        ? ['Gravad lax till julbordet', 'Gravad lax']
+        : ['Gravad lax'];
+      expect(r.map((entry) => entry.title)).toEqual(väntat);
+      done();
+    });
+  });
+
   it('svarar tomt utan råvaror, utan att fråga källan', (done) => {
     source.recipesFor([]).subscribe((r) => {
       expect(r).toEqual([]);

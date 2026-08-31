@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, shareReplay } from 'rxjs';
 
 /**
  * Tastelines WordPress-API. Det kräver ingen nyckel och svarar med
@@ -24,6 +24,7 @@ const RECIPE_FIELDS = [
   'meta.tasteline_recipe_data.recipe.totalDuration',
   'meta.tasteline_recipe_data.images',
   'ingredient',
+  'recipe_occasion',
 ].join(',');
 
 /**
@@ -47,6 +48,8 @@ export interface TastelineRecipe {
   title: { rendered: string };
   /** Ingredienstermernas id:n, används för att koppla receptet till en vara. */
   ingredient: number[];
+  /** Tillfällenas id:n: jul, påsk, midsommar och så vidare. */
+  recipe_occasion?: number[];
   meta?: {
     tasteline_recipe_data?: {
       recipe?: {
@@ -96,6 +99,24 @@ function smallestOf(item: TastelineMedia): string | null {
 @Injectable({ providedIn: 'root' })
 export class TastelineService {
   private readonly http = inject(HttpClient);
+
+  /**
+   * Tillfällena — jul, påsk, midsommar — hämtas en gång per besök och delas
+   * sedan. Taxonomin ändras ett par gånger om året, inte per sökning.
+   */
+  private readonly occasionTerms = this.http
+    .get<TastelineTerm[]>(`${API_BASE}/recipe_occasion`, {
+      params: new HttpParams({ fromObject: { per_page: 100, _fields: 'id,name,count' } }),
+    })
+    .pipe(
+      catchError(() => of([] as TastelineTerm[])),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
+  /** Alla tillfällen källan känner till, med namn. */
+  occasions(): Observable<TastelineTerm[]> {
+    return this.occasionTerms;
+  }
 
   /**
    * Ingredienstermer som matchar söktexten. Tom lista när ingen term finns,

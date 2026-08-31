@@ -157,7 +157,26 @@ Kedjan från rea till recept, i [recipes.service.ts](src/app/core/recipes.servic
    **minst 3,5 av 5, från minst 5 röster.** Betygskravet ensamt räcker inte —
    ett femma från en enda röst säger ingenting om receptet, bara om den som
    råkade rösta. Recept helt utan betyg faller bort på samma villkor.
-4. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
+4. **Recept ur säsong faller bort.** Ett julrecept i augusti är inget förslag,
+   hur billig fläskkarrén än är. Vad som hör till vilken del av året står i
+   [seasons.ts](src/app/core/seasons.ts): jul och nyår, påsk, midsommar,
+   kräftskiva, halloween och några fler, med marginal framåt eftersom man lagar
+   inför en högtid och inte bara på dagen.
+
+   Tasteline taggar recepten med sina egna tillfällen — Jul, Julgodis, Påskmat —
+   och det är den säkraste signalen. I en mätning på sextio recept bar tre en
+   tagg utanför säsong, och alla tre hade helt neutrala rubriker: "Tastelines
+   köttbullar", "Minihamburgare", "Pestobollar med pumpasallad". Bara taggen
+   fångar dem. Taxonomin hämtas en gång per besök och delas.
+
+   Zeta saknar tillfällestaggar, så där läses årstiden ur rubriken. Rubriken
+   används som nät även för Tasteline, när taggen saknas.
+
+   Priset: taggen betyder "passar det här tillfället", inte "bara till det här
+   tillfället". Tastelines köttbullar är utmärkta i augusti men taggade som
+   julmat, och de faller därför bort. Det är den avvägning som gjordes — hellre
+   ett bra recept för lite än en pepparkaksdessert i juli.
+5. Ordningen är högsta betyg först, men **varvat över varorna**. En populär
    ingrediens kan ha dussintals högt betygsatta recept och skulle annars fylla
    hela första sidan med blåbär — poängen är att visa vad man kan laga av rean,
    plural.
@@ -385,6 +404,11 @@ Plats, annars är ortssökningen vägen framåt.
 - **[cooking-time-filter.component.spec.ts](src/app/components/cooking-time-filter.component.spec.ts)**
   täcker rutan: de korta etiketterna, enheten i rubriken, antalet per spann och
   att den upplästa etiketten är utskriven.
+- **[seasons.spec.ts](src/app/core/seasons.spec.ts)** täcker säsongsregeln mot
+  fasta datum, så att testerna inte beror på när de körs: att julen sållas bort
+  i augusti men inte i december, att kräftskivan är omvänt, och att "sallad i
+  juli", "julienneskurna grönsaker" och "knäckebröd" inte förväxlas med
+  högtider.
 - **[origin.spec.ts](src/app/core/origin.spec.ts)** täcker svenskmärkningen,
   vilka råvaror som räknas som kött, att kött utan ursprungsuppgift räknas som
   okänt och inte som svenskt, och att fisk och grönsaker släpps igenom oavsett.
