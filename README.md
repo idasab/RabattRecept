@@ -505,9 +505,15 @@ python tools/generate-icons.py
 ```
 
 Skriptet ritar ikonerna och `favicon.ico` från grunden, utan beroenden utöver
-Pythons standardbibliotek. Motivet är ett procenttecken i gräddvitt mot en varm
-övergång från saffran till tomat — appens egna accentfärger, så att ikonen på
-hemskärmen ser ut som det man möts av när man öppnar den.
+Pythons standardbibliotek. Motivet är ett procenttecken där snedstrecket är en
+gaffel, i gräddvitt mot en varm övergång från saffran till tomat — appens egna
+accentfärger, så att ikonen på hemskärmen ser ut som det man möts av när man
+öppnar den. Appen handlar om att laga mat av rean, så ikonen säger båda
+sakerna: procenten känns igen på avstånd, gaffeln på nära håll.
+
+Piggarna är tjocka och glesa med flit. Ritas de smalare blir de en enda klump
+när ikonen krymper till 48 px på hemskärmen, och då försvinner hela poängen —
+det är i den storleken ikonen ska fungera, inte i 1024.
 
 ## Att veta om datakällan
 

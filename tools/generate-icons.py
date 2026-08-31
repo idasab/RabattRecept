@@ -1,10 +1,14 @@
 """Genererar appens ikoner i alla storlekar, plus favicon.ico.
 
-Motivet är ett procenttecken i legostil — två ringar och en rak stapel i
-gräddvitt mot en varm övergång från saffran till tomat. Färgerna är appens
-egna accenter, så ikonen på hemskärmen ser ut som det man möts av när man
-öppnar den. Körs med `python tools/generate-icons.py` och skriver över filerna
-i src/assets/icons. Inga beroenden utöver standardbiblioteket.
+Motivet är ett procenttecken där snedstrecket är en gaffel: två ringar och ett
+bestick i gräddvitt mot en varm övergång från saffran till tomat. Appen handlar
+om att laga mat av rean, så ikonen säger båda sakerna — procenten känns igen på
+avstånd, gaffeln på nära håll.
+
+Färgerna är appens egna accenter, så ikonen på hemskärmen ser ut som det man
+möts av när man öppnar den. Körs med `python tools/generate-icons.py` och
+skriver över filerna i src/assets/icons. Inga beroenden utöver
+standardbiblioteket.
 """
 import math
 import struct
@@ -23,15 +27,25 @@ TOMATO = (198, 74, 42)
 # Supersampling per axel. Motivet har hårda kanter, så det behövs för mjuka linjer.
 SAMPLES = 3
 
-# Procenttecknet: två lika stora ringar i motsatta hörn och en stapel mellan
-# dem. Ringarnas hål är stora nog att synas kvar vid 48 px på hemskärmen.
-RING_CENTERS = ((0.335, 0.335), (0.665, 0.665))
+# Två lika stora ringar i motsatta hörn. Hålen är stora nog att synas kvar vid
+# 48 px på hemskärmen, vilket är det som avgör om tecknet läses som en procent.
+RING_CENTERS = ((0.325, 0.325), (0.675, 0.675))
 RING_OUTER = 0.128
-RING_INNER = 0.062
+RING_INNER = 0.060
 
-BAR_START = (0.285, 0.735)
-BAR_END = (0.715, 0.265)
-BAR_HALF_WIDTH = 0.056
+# Gaffeln ligger där procenttecknets snedstreck skulle gått. Skaftet slutar en
+# bit in på piggarna så att de sitter fast i det.
+FORK_START = (0.28, 0.76)
+FORK_END = (0.72, 0.24)
+HANDLE_HALF_WIDTH = 0.048
+HANDLE_END = 0.58
+
+# Tre piggar, tjocka och glesa med flit: smalare än så här blir de en enda
+# klump när ikonen krymper till 48 px, och då försvinner hela poängen.
+TINE_COUNT = 3
+TINE_SPREAD = 0.060
+TINE_HALF_WIDTH = 0.024
+TINE_START = 0.55
 
 
 def lerp(a, b, t):
@@ -52,12 +66,33 @@ def in_ring(x, y, center):
     return RING_INNER <= distance <= RING_OUTER
 
 
-def in_bar(x, y):
-    return distance_to_segment(x, y, *BAR_START, *BAR_END) <= BAR_HALF_WIDTH
+def in_fork(x, y):
+    """Skaftet längs snedstrecket, med piggarna i övre änden."""
+    ax, ay = FORK_START
+    dx, dy = FORK_END[0] - ax, FORK_END[1] - ay
+
+    if distance_to_segment(x, y, ax, ay, ax + dx * HANDLE_END, ay + dy * HANDLE_END) <= (
+        HANDLE_HALF_WIDTH
+    ):
+        return True
+
+    # Piggarna sitter vinkelrätt mot skaftet, jämnt fördelade kring mitten.
+    length = math.hypot(dx, dy)
+    nx, ny = -dy / length, dx / length
+    middle = (TINE_COUNT - 1) / 2
+
+    for index in range(TINE_COUNT):
+        offset = (index - middle) * TINE_SPREAD
+        sx, sy = ax + dx * TINE_START + nx * offset, ay + dy * TINE_START + ny * offset
+        ex, ey = ax + dx + nx * offset, ay + dy + ny * offset
+        if distance_to_segment(x, y, sx, sy, ex, ey) <= TINE_HALF_WIDTH:
+            return True
+
+    return False
 
 
 def in_percent(x, y):
-    if in_bar(x, y):
+    if in_fork(x, y):
         return True
     return any(in_ring(x, y, center) for center in RING_CENTERS)
 
