@@ -402,12 +402,6 @@ export class AppComponent implements OnInit {
     this.requestRecipes();
   }
 
-  selectAllChains(): void {
-    this.selected.set(new Set(this.chains().map((chain) => chain.id)));
-    this.saveSettings();
-    this.requestRecipes();
-  }
-
   clearChains(): void {
     this.selected.set(new Set());
     this.saveSettings();

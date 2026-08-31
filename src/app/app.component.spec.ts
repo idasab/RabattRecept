@@ -264,7 +264,8 @@ describe('AppComponent', () => {
 
   it('utesluter varor man valt bort ur underlaget för recepten', async () => {
     await create();
-    fixture.componentInstance.selectAllChains();
+    fixture.componentInstance.toggleChain('willys');
+    fixture.componentInstance.toggleChain('coop');
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
@@ -278,7 +279,8 @@ describe('AppComponent', () => {
 
   it('kommer ihåg de uteslutna varorna till nästa besök', async () => {
     await create();
-    fixture.componentInstance.selectAllChains();
+    fixture.componentInstance.toggleChain('willys');
+    fixture.componentInstance.toggleChain('coop');
     fixture.componentInstance.excludeFood('Fläsk');
 
     await restart();
@@ -289,7 +291,8 @@ describe('AppComponent', () => {
 
   it('tar tillbaka varan när uteslutningen ångras', async () => {
     await create();
-    fixture.componentInstance.selectAllChains();
+    fixture.componentInstance.toggleChain('willys');
+    fixture.componentInstance.toggleChain('coop');
     fixture.componentInstance.excludeFood('fläsk');
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
@@ -368,7 +371,8 @@ describe('AppComponent', () => {
 
   it('kräver svenskmärkning av kött när filtret är på', async () => {
     await create();
-    fixture.componentInstance.selectAllChains();
+    fixture.componentInstance.toggleChain('willys');
+    fixture.componentInstance.toggleChain('coop');
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
@@ -383,7 +387,8 @@ describe('AppComponent', () => {
 
   it('kommer ihåg köttfiltret till nästa besök', async () => {
     await create();
-    fixture.componentInstance.selectAllChains();
+    fixture.componentInstance.toggleChain('willys');
+    fixture.componentInstance.toggleChain('coop');
     fixture.componentInstance.chooseSwedishMeat(true);
 
     await restart();

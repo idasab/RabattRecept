@@ -55,6 +55,10 @@ describe('ChainFilterComponent', () => {
     ).map((element) => element.textContent?.trim() ?? '');
   }
 
+  function bulkButton(): HTMLButtonElement | null {
+    return (fixture.nativeElement as HTMLElement).querySelector('.bulk');
+  }
+
   function moreButton(): HTMLButtonElement | null {
     return (fixture.nativeElement as HTMLElement).querySelector('.more');
   }
@@ -173,6 +177,36 @@ describe('ChainFilterComponent', () => {
     fixture.detectChanges();
 
     expect(rows().length).toBe(8);
+  });
+
+  it('visar ingen rensa-knapp när inget är ikryssat', () => {
+    // Det finns inget "markera alla": att vilja se varje kedja samtidigt är
+    // inget riktigt behov.
+    setChains(6);
+    fixture.componentInstance.selected = new Set();
+    fixture.detectChanges();
+
+    expect(bulkButton()).toBeNull();
+  });
+
+  it('visar rensa-knappen när något är ikryssat', () => {
+    setChains(6);
+    fixture.componentInstance.selected = new Set(['k1']);
+    fixture.detectChanges();
+
+    expect(bulkButton()?.textContent?.trim()).toBe('Rensa');
+  });
+
+  it('rensar hela urvalet, inte bara de synliga', () => {
+    setChains(12);
+    fixture.componentInstance.selected = new Set(['k0', 'k9']);
+    fixture.detectChanges();
+    let rensat = 0;
+    fixture.componentInstance.clear.subscribe(() => (rensat += 1));
+
+    bulkButton()?.click();
+
+    expect(rensat).toBe(1);
   });
 
   it('visar alla favoriter även när de är fler än fyra', () => {

@@ -14,8 +14,8 @@ const STEP = 4;
  *
  * Listan håller varken markering eller favoriter själv utan får dem utifrån,
  * så att valen överlever en ny hämtning och kan sparas mellan besöken. Att en
- * kedja är dold betyder alltså inte att den är urkryssad: "Markera alla" och
- * "Rensa alla" gäller alla kedjor, inte bara de synliga.
+ * kedja är dold betyder alltså inte att den är urkryssad: "Rensa" gäller alla
+ * kedjor, inte bara de synliga.
  */
 @Component({
   selector: 'app-chain-filter',
@@ -25,8 +25,11 @@ const STEP = 4;
     <section class="card">
       <header class="head">
         <h2 class="card-heading">Kedjor nära dig</h2>
-        <button type="button" class="bulk" (click)="allSelected ? clear.emit() : selectAll.emit()">
-          {{ allSelected ? 'Rensa alla' : 'Markera alla' }}
+        <!-- Ingen "markera alla": att vilja se varje kedja samtidigt är inget
+             riktigt behov, och knappen inbjöd till det. Rensa finns kvar, men
+             bara när det finns något att rensa. -->
+        <button *ngIf="anySelected" type="button" class="bulk" (click)="clear.emit()">
+          Rensa
         </button>
       </header>
 
@@ -235,7 +238,6 @@ export class ChainFilterComponent implements OnChanges {
 
   @Output() readonly toggle = new EventEmitter<string>();
   @Output() readonly favorite = new EventEmitter<string>();
-  @Output() readonly selectAll = new EventEmitter<void>();
   @Output() readonly clear = new EventEmitter<void>();
 
   private shown = STEP;
@@ -281,8 +283,8 @@ export class ChainFilterComponent implements OnChanges {
     return Math.max(0, this.chains.length - this.shown);
   }
 
-  get allSelected(): boolean {
-    return this.chains.length > 0 && this.chains.every((chain) => this.selected.has(chain.id));
+  get anySelected(): boolean {
+    return this.chains.some((chain) => this.selected.has(chain.id));
   }
 
   showMore(): void {
