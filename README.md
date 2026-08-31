@@ -465,30 +465,36 @@ sh tools/fetch-font.sh
 python tools/build-pages.py
 ```
 
-Skriptet bygger appen med rätt base href och lägger resultatet i grenen
-`gh-pages`. Arbetskatalogen och grenen du står på lämnas orörda — bygget
-committas i ett tillfälligt git-arbetsträd. Pusha sedan:
-
-```bash
-git push origin gh-pages
-```
+Skriptet bygger appen med rätt base href till `docs/`, som GitHub Pages
+serverar. Committa och pusha sedan som vanligt — det blir en enda push,
+eftersom bygget ligger på samma gren som källkoden.
 
 Första gången behöver GitHub ställas in: **Settings → Pages → Source: Deploy
-from a branch**, gren `gh-pages`, mapp `/ (root)`. Appen hamnar på
+from a branch**, gren `main`, mapp `/docs`. Appen hamnar på
 `https://<användare>.github.io/RabattRecept/`. Pages kräver att repot är
 publikt, om man inte betalar för planen.
+
+Adressen är skiftlägeskänslig: `/RabattRecept/` fungerar, `/rabattrecept/` ger
+404. Det går inte att ändra — det sitter i GitHubs servrar och följer
+reponamnet. Lägg appen på hemskärmen en gång med rätt adress, då är det en
+engångssak.
 
 Tre saker som måste stämma, och som skriptet sköter:
 
 - **Base href.** Pages serverar projektet i en underkatalog, så appen byggs med
-  `--base-href /RabattRecept/`. Utan det pekar alla tillgångar fel.
-  Service workern följer med automatiskt: `ngsw.json` får samma prefix.
+  `--base-href /RabattRecept/`. Utan det pekar alla tillgångar fel. Service
+  workern följer med automatiskt: `ngsw.json` får samma prefix.
 - **`.nojekyll`.** Utan den filen kör Pages allt genom Jekyll först, som
-  ignorerar filer och kataloger som börjar med understreck.
+  hoppar över filer och kataloger som börjar med understreck. Den skrivs efter
+  bygget, eftersom bygget tömmer katalogen.
 - **Bygg inte för hand i Git Bash.** MSYS översätter argument som ser ut som
   sökvägar, så `--base-href /RabattRecept/` blir
   `C:/Program Files/Git/RabattRecept/` och appen får en base href som pekar rakt
   ut i tomma intet. Skriptet anropar npx utan skal och undgår det.
+
+Att bygget ligger i `docs/` i stället för på en egen `gh-pages`-gren är ett
+medvetet val: det syns i varje diff, men ger en enda gren och en enda push. I
+ett litet projekt med en utvecklare är en ren pushrutin värd mer än en ren diff.
 
 Appen fungerar bra på Pages i övrigt: den har ingen router och behöver därför
 ingen 404-omskrivning, och Pages serverar över HTTPS, vilket både geolocation

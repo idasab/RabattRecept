@@ -1,0 +1,109 @@
+{
+  "configVersion": 1,
+  "timestamp": 1788159981168,
+  "index": "/RabattRecept/index.html",
+  "assetGroups": [
+    {
+      "name": "appskal",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/RabattRecept/assets/fonts/commissioner-latin-400-700.woff2",
+        "/RabattRecept/assets/fonts/permanent-marker-latin-400.woff2",
+        "/RabattRecept/favicon.ico",
+        "/RabattRecept/index.html",
+        "/RabattRecept/main.dc67927be4838f11.js",
+        "/RabattRecept/manifest.webmanifest",
+        "/RabattRecept/polyfills.8a3ae097903cfef4.js",
+        "/RabattRecept/runtime.1770fc32aa68bb67.js",
+        "/RabattRecept/styles.499f1b7e88c715df.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "tillgangar",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/RabattRecept/assets/icons/icon-1024.png",
+        "/RabattRecept/assets/icons/icon-180.png",
+        "/RabattRecept/assets/icons/icon-192.png",
+        "/RabattRecept/assets/icons/icon-512.png",
+        "/RabattRecept/commissioner-latin-400-700.aa924b7c62245c84.woff2",
+        "/RabattRecept/permanent-marker-latin-400.09f7b6b7f4b56175.woff2"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "erbjudanden",
+      "patterns": [
+        "https:\\/\\/squid-api\\.tjek\\.com\\/.*"
+      ],
+      "strategy": "freshness",
+      "maxSize": 40,
+      "maxAge": 86400000,
+      "timeoutMs": 6000,
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "version": 1
+    },
+    {
+      "name": "produktbilder",
+      "patterns": [
+        "https:\\/\\/image-transformer-api\\.tjek\\.com\\/.*"
+      ],
+      "strategy": "performance",
+      "maxSize": 400,
+      "maxAge": 604800000,
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "version": 1
+    }
+  ],
+  "hashTable": {
+    "/RabattRecept/assets/fonts/commissioner-latin-400-700.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
+    "/RabattRecept/assets/fonts/permanent-marker-latin-400.woff2": "5190bac9999e35c0c4f2a005a01f60b330c5615b",
+    "/RabattRecept/assets/icons/icon-1024.png": "98359ef3f179cad48fec5115ec7b8b7f1bd87fc8",
+    "/RabattRecept/assets/icons/icon-180.png": "3731b22b0da6f4ac8402c88b26885b7942b8364d",
+    "/RabattRecept/assets/icons/icon-192.png": "1033bcbb3f72fad509c9d3a85d994780e2a89048",
+    "/RabattRecept/assets/icons/icon-512.png": "1cf38e71d4f004e780eb242e7f3eb04de1ad55d5",
+    "/RabattRecept/commissioner-latin-400-700.aa924b7c62245c84.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
+    "/RabattRecept/favicon.ico": "5fe10c16b7bf810c3259ae856695ba1119eb2733",
+    "/RabattRecept/index.html": "e6ec2fd1006be4ca06f1980aa8e1ddc3c54bec25",
+    "/RabattRecept/main.dc67927be4838f11.js": "4ee6c450f27cc1c945ffe84753410bb8e0d62150",
+    "/RabattRecept/manifest.webmanifest": "a0ff8abef3e61975d6118c0ea4135283d7ec4e03",
+    "/RabattRecept/permanent-marker-latin-400.09f7b6b7f4b56175.woff2": "5190bac9999e35c0c4f2a005a01f60b330c5615b",
+    "/RabattRecept/polyfills.8a3ae097903cfef4.js": "f8ffce8571964634385e658c033f5b1dd6cf6942",
+    "/RabattRecept/runtime.1770fc32aa68bb67.js": "f96bae587be1cadcfce61f3c58c55e2674fd0428",
+    "/RabattRecept/styles.499f1b7e88c715df.css": "920a9309d9398954d966cc566efeccb66cd7b7ed"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
