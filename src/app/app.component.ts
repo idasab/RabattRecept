@@ -86,13 +86,6 @@ export class AppComponent implements OnInit {
 
   private readonly recipeRequests = new Subject<void>();
 
-  /**
-   * Sant tills appen vet vad användaren brukar välja. Först då, och bara då,
-   * kryssas allt i — annars möts en ny användare utan favoriter av en tom
-   * skärm och en app som ser trasig ut.
-   */
-  private firstVisit = true;
-
   readonly radii = RADII;
 
   /**
@@ -250,7 +243,6 @@ export class AppComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const settings = this.readSettings();
     if (settings) {
-      this.firstVisit = false;
       this.radiusKm.set(settings.radiusKm);
       this.selected.set(new Set(settings.selected));
       this.favorites.set(new Set(settings.favorites));
@@ -455,15 +447,14 @@ export class AppComponent implements OnInit {
   /**
    * Vad som ska vara ikryssat bland de kedjor som faktiskt finns här.
    *
-   * Regeln är avsiktligt enkel: finns det favoriter är det precis de som är
-   * ikryssade när appen öppnas, ingen annan. Kryssar man i en till under
-   * besöket gäller det tills appen öppnas nästa gång — favoriterna är det som
-   * består. Kedjor som inte finns i närheten faller bort ur urvalet men ligger
-   * kvar som favoriter, ifall man kommer tillbaka.
+   * Regeln är: finns det favoriter är det precis de som är ikryssade när appen
+   * öppnas, ingen annan. Finns inga favoriter är ingen ikryssad — appen gissar
+   * inte, den väntar på att man kryssar i något eller stjärnmärker en kedja.
+   * Kryssar man i en till under besöket gäller det tills appen öppnas nästa
+   * gång; favoriterna är det som består.
    *
-   * Utan favoriter finns inget att gå på: då kryssas allt i första gången,
-   * annars möts en ny användare av en tom skärm och en app som ser trasig ut.
-   * En återvändare utan favoriter får tillbaka sitt senaste urval.
+   * Kedjor som inte finns i närheten faller bort ur urvalet men ligger kvar som
+   * favoriter, ifall man kommer tillbaka.
    */
   private reconcile(chains: readonly Chain[]): void {
     const present = new Set(chains.map((chain) => chain.id));
@@ -474,17 +465,10 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    if (this.firstVisit) {
-      this.selected.set(present);
-      return;
-    }
-
     this.selected.set(new Set([...this.selected()].filter((id) => present.has(id))));
   }
 
   private saveSettings(): void {
-    this.firstVisit = false;
-
     const settings: StoredSettings = {
       radiusKm: this.radiusKm(),
       selected: [...this.selected()],

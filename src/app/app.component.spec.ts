@@ -171,24 +171,32 @@ describe('AppComponent', () => {
 
   afterEach(() => localStorage.clear());
 
-  it('visar platsen och alla kedjor ikryssade från början', async () => {
+  it('visar platsen med kedjorna listade men ingen ikryssad', async () => {
     await create();
 
     expect(text()).toContain('Testköping');
     expect(checkboxes().length).toBe(2);
-    expect(checkboxes().every((box) => box.checked)).toBeTrue();
-    expect(fixture.componentInstance.selectedOffers().length).toBe(2);
+    // Utan favoriter gissar appen inte, den väntar på ett kryss.
+    expect(checkboxes().some((box) => box.checked)).toBeFalse();
+    expect(fixture.componentInstance.selectedOffers().length).toBe(0);
   });
 
-  it('döljer kedjans erbjudanden när kryssrutan bockas ur', async () => {
+  it('söker inga recept förrän något är ikryssat', async () => {
+    await create();
+
+    const recipes = TestBed.inject(RecipesService) as unknown as StubRecipesService;
+    expect(recipes.lastSeedChains).toEqual([]);
+  });
+
+  it('tar med kedjans erbjudanden när kryssrutan bockas i', async () => {
     await create();
 
     checkboxes()[0].click();
     fixture.detectChanges();
 
-    const visible = fixture.componentInstance.selectedOffers();
-    expect(visible.length).toBe(1);
-    expect(visible[0].chainName).toBe('Coop');
+    const valda = fixture.componentInstance.selectedOffers();
+    expect(valda.length).toBe(1);
+    expect(valda[0].chainName).toBe('Willys');
   });
 
   it('kommer ihåg urvalet till nästa besök när inga favoriter finns', async () => {
@@ -197,7 +205,7 @@ describe('AppComponent', () => {
 
     await restart();
 
-    expect(checkboxes().map((box) => box.checked)).toEqual([false, true]);
+    expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
   });
 
   it('lyfter favoriten överst och kryssar i den', async () => {
@@ -215,8 +223,8 @@ describe('AppComponent', () => {
 
   it('kryssar i exakt favoriterna vid start, inga andra', async () => {
     await create();
-    // Allt är ikryssat första besöket, och Coop blir favorit.
-    expect(fixture.componentInstance.selected().size).toBe(2);
+    // Inget är ikryssat från början; Coop blir favorit och därmed ikryssad.
+    expect(fixture.componentInstance.selected().size).toBe(0);
     stars()[1].click();
 
     await restart();
@@ -256,6 +264,8 @@ describe('AppComponent', () => {
 
   it('utesluter varor man valt bort ur underlaget för recepten', async () => {
     await create();
+    fixture.componentInstance.selectAllChains();
+    fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
     fixture.componentInstance.excludeFood('fläsk');
@@ -268,6 +278,7 @@ describe('AppComponent', () => {
 
   it('kommer ihåg de uteslutna varorna till nästa besök', async () => {
     await create();
+    fixture.componentInstance.selectAllChains();
     fixture.componentInstance.excludeFood('Fläsk');
 
     await restart();
@@ -278,6 +289,7 @@ describe('AppComponent', () => {
 
   it('tar tillbaka varan när uteslutningen ångras', async () => {
     await create();
+    fixture.componentInstance.selectAllChains();
     fixture.componentInstance.excludeFood('fläsk');
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
@@ -356,6 +368,8 @@ describe('AppComponent', () => {
 
   it('kräver svenskmärkning av kött när filtret är på', async () => {
     await create();
+    fixture.componentInstance.selectAllChains();
+    fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
     fixture.componentInstance.chooseSwedishMeat(true);
@@ -369,6 +383,7 @@ describe('AppComponent', () => {
 
   it('kommer ihåg köttfiltret till nästa besök', async () => {
     await create();
+    fixture.componentInstance.selectAllChains();
     fixture.componentInstance.chooseSwedishMeat(true);
 
     await restart();
