@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Coordinates } from './offers.models';
 
 /**
@@ -14,11 +14,32 @@ const API_BASE = 'https://squid-api.tjek.com/v2';
 const PAGE_SIZE = 100;
 
 /**
- * Fyra sidor räcker: i en storstad ger det ~400 erbjudanden inom radien, och
- * på mindre orter tar erbjudandena slut långt innan dess. Fler sidor gör mest
- * hämtningen långsammare.
+ * Hur många sidor som hämtas åt gången. Fyra parallella anrop är snabbt utan
+ * att bli oförskämt mot källan, och räcker hela vägen på en liten ort.
  */
-const MAX_PAGES = 4;
+const WAVE = 4;
+
+/**
+ * Taket för antal sidor, beroende på radie.
+ *
+ * Erbjudandena kommer varken i närhetsordning eller i stabil ordning, så en
+ * kapad hämtning ger ett slumpmässigt urval snarare än det närmaste. Taket
+ * måste därför räcka till hela populationen inom radien. Mätt kring Huskvarna:
+ * 549 erbjudanden inom 5 km, 1000 inom 25 km. Taken har marginal över det.
+ */
+function maxPagesFor(radiusMeters: number): number {
+  const km = radiusMeters / 1000;
+  if (km <= 2) {
+    return 4;
+  }
+  if (km <= 5) {
+    return 8;
+  }
+  if (km <= 10) {
+    return 12;
+  }
+  return 16;
+}
 
 /**
  * Butikerna kommer i ungefärlig närhetsordning, så tre sidor räcker för att
@@ -58,19 +79,56 @@ export interface TjekOffer {
 export class TjekService {
   private readonly http = inject(HttpClient);
 
-  /** Erbjudanden inom radien, hopslagna från alla sidor. */
+  /**
+   * Erbjudanden inom radien, hopslagna från alla sidor.
+   *
+   * Sidorna hämtas i omgångar om fyra och fortsätter så länge hela omgången var
+   * full — en halvfull sida betyder att erbjudandena tagit slut. Så slipper en
+   * liten ort betala för sexton anrop, medan en stor radie ändå får hela
+   * populationen.
+   */
   offersNear(coordinates: Coordinates, radiusMeters: number): Observable<TjekOffer[]> {
-    const [first, ...rest] = Array.from({ length: MAX_PAGES }, (_, index) =>
-      this.page(coordinates, radiusMeters, index * PAGE_SIZE)
+    return this.wave(coordinates, radiusMeters, 0, maxPagesFor(radiusMeters)).pipe(
+      map((offers) => this.dedupe(offers))
     );
+  }
 
-    return forkJoin([
-      // Första sidan får fela vidare: går inte den fram är hämtningen
-      // misslyckad och användaren ska få veta det. Att sida tre saknas märks
+  private wave(
+    coordinates: Coordinates,
+    radiusMeters: number,
+    from: number,
+    cap: number
+  ): Observable<TjekOffer[]> {
+    const size = Math.min(WAVE, cap - from);
+    if (size <= 0) {
+      return of([]);
+    }
+
+    const pages = Array.from({ length: size }, (_, index) => {
+      const page = this.page(coordinates, radiusMeters, (from + index) * PAGE_SIZE);
+
+      // Allra första sidan får fela vidare: går inte den fram är hämtningen
+      // misslyckad och användaren ska få veta det. Att sida tolv saknas märks
       // däremot inte, och då är en kortare lista bättre än ett felmeddelande.
-      first,
-      ...rest.map((page) => page.pipe(catchError(() => of([] as TjekOffer[])))),
-    ]).pipe(map((pages) => this.dedupe(pages.flat())));
+      return from === 0 && index === 0
+        ? page
+        : page.pipe(catchError(() => of([] as TjekOffer[])));
+    });
+
+    return forkJoin(pages).pipe(
+      switchMap((results) => {
+        const here = results.flat();
+        const allFull = results.every((page) => page.length === PAGE_SIZE);
+
+        if (!allFull) {
+          return of(here);
+        }
+
+        return this.wave(coordinates, radiusMeters, from + size, cap).pipe(
+          map((next) => [...here, ...next])
+        );
+      })
+    );
   }
 
   /**
