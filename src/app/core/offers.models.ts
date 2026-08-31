@@ -10,9 +10,15 @@ export interface Place extends Coordinates {
 }
 
 /**
- * En matkedja som har minst ett erbjudande i närheten. Det är butiksformatet
- * som listas, inte varumärket: skillnaden mellan ICA Nära och ICA Maxi är hela
- * poängen när man ska välja var man handlar.
+ * En matkedja med butik i närheten. Det är butiksformatet som listas, inte
+ * varumärket: skillnaden mellan ICA Nära och ICA Maxi är hela poängen när man
+ * ska välja var man handlar.
+ *
+ * Listan byggs på butikerna och inte på erbjudandena, för erbjudandena hämtas
+ * kapade och en bredare radie ger då inte ett större urval utan ett annat. En
+ * mätning kring Huskvarna gav tolv kedjor från butikerna men bara tio från
+ * erbjudandena vid 25 km: Willys och Willys Hemma låg på sida sex och föll
+ * bort. Butikerna växer däremot monotont med radien, som man förväntar sig.
  */
 export interface Chain {
   id: string;
@@ -22,7 +28,6 @@ export interface Chain {
   /** Kedjans egen färg, '#e2011a'. Används bara som liten prick, aldrig som yta. */
   color: string;
   logo: string | null;
-  offerCount: number;
   /**
    * Fågelvägen till kedjans närmaste butik, i kilometer. Null när ingen butik
    * hittades inom radien — kedjan kan ha erbjudanden som gäller ett större

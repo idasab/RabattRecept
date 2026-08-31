@@ -7,7 +7,7 @@ import { Chain } from '../core/offers.models';
 const STEP = 4;
 
 /**
- * Kedjorna som har erbjudanden i närheten, som en lista att kryssa i.
+ * Kedjorna med butik i närheten, som en lista att kryssa i.
  * Favoriterna ligger överst, resten närmast först. Listan börjar kort och
  * växer fyra rader i taget — i en storstad finns ett dussin kedjor, och de
  * flesta handlar i ett par av dem.
@@ -45,7 +45,6 @@ const STEP = 4;
             <span class="dot" aria-hidden="true" [style.background]="chain.color"></span>
             <span class="name">{{ chain.name }}</span>
             <span class="distance">{{ distance(chain) }}</span>
-            <span class="count">{{ chain.offerCount }}</span>
           </label>
 
           <button
@@ -167,19 +166,15 @@ const STEP = 4;
         color: var(--text-muted);
       }
 
-      .distance,
-      .count {
+      /* Avståndet får en egen kolumn så att raderna linjerar även när det
+         växlar mellan '80 m' och '14 km'. */
+      .distance {
         flex: none;
+        min-width: 48px;
         font-size: 13px;
         font-variant-numeric: tabular-nums;
-        color: var(--text-faint);
-      }
-
-      /* Siffran för antal erbjudanden får en egen kolumn så att raderna
-         linjerar även när avståndet växlar mellan '80 m' och '14 km'. */
-      .count {
-        min-width: 24px;
         text-align: right;
+        color: var(--text-faint);
       }
 
       .star {
@@ -295,11 +290,10 @@ export class ChainFilterComponent implements OnChanges {
     return chain.distanceKm === null ? '' : formatDistance(chain.distanceKm);
   }
 
-  /** Etiketten som läses upp: siffrorna i raden säger inget utan sitt sammanhang. */
+  /** Etiketten som läses upp: avståndet i raden säger inget utan sitt sammanhang. */
   label(chain: Chain): string {
-    const offers = chain.offerCount === 1 ? 'erbjudande' : 'erbjudanden';
     const near = chain.distanceKm === null ? '' : `, ${formatDistance(chain.distanceKm)}`;
-    return `${chain.name}${near}, ${chain.offerCount} ${offers}`;
+    return `${chain.name}${near}`;
   }
 
   favoriteLabel(chain: Chain): string {

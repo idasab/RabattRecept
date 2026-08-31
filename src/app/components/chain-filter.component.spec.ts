@@ -9,7 +9,6 @@ function chain(index: number): Chain {
     brand: `Kedja ${index}`,
     color: '#6b7f96',
     logo: null,
-    offerCount: 10 - index,
     distanceKm: index * 0.5,
   };
 }
@@ -261,6 +260,6 @@ describe('ChainFilterComponent', () => {
 
     expect(distances[0]).toBe('0 m');
     expect(distances[2]).toBe('1,0 km');
-    expect(fixture.componentInstance.label(chain(2))).toBe('Kedja 2, 1,0 km, 8 erbjudanden');
+    expect(fixture.componentInstance.label(chain(2))).toBe('Kedja 2, 1,0 km');
   });
 });

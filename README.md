@@ -68,14 +68,28 @@ npm run lint
    namn medan `ica.se` står still.
 4. **Uteslutna varor faller bort.** Det man angett under Uteslut matvaror
    sållas ur underlaget innan söktermerna väljs.
-5. **Avståndet.** Butikerna hämtas parallellt med erbjudandena och ger varje
-   kedja avståndet till sin närmaste butik, räknat med haversine i
-   [`distance.ts`](src/app/core/distance.ts). Misslyckas den hämtningen står
-   kedjorna utan avstånd i stället för att hela sidan blir ett fel.
-6. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd och antal
-   erbjudanden. Fyra rader visas från början och "Visa fler" lägger till fyra i
-   taget. Erbjudandena hämtas en gång per plats och radie; kryssrutorna arbetar
-   sedan på den redan hämtade listan.
+5. **Kedjelistan byggs på butikerna.** Butikerna hämtas parallellt med
+   erbjudandena och ger både vilka kedjor som finns i närheten och avståndet
+   till varje kedjas närmaste butik, räknat med haversine i
+   [`distance.ts`](src/app/core/distance.ts).
+
+   **Butikerna och inte erbjudandena, för att listan ska växa monotont.**
+   Erbjudandena hämtas kapade till fyra sidor, och API:et returnerar dem varken
+   i närhetsordning eller i stabil ordning — en bredare radie ger därför inte
+   ett större urval utan ett annat. Mätt kring Huskvarna: vid 5 km finns 549
+   erbjudanden och 4 kedjor, vid 25 km finns 1000 erbjudanden och 12 kedjor, men
+   Willys och Willys Hemma dyker upp först på sida sex och föll bort ur de
+   fyra hämtade sidorna. Kedjelistan tappade alltså kedjor när man drog ut
+   reglaget. Butikerna växer däremot alltid med radien.
+
+   Kvarstående begränsning: en kedja kan stå i listan utan att dess erbjudanden
+   kom med i de fyra sidorna, och då ger den inga recept när man kryssar i den.
+   Det åtgärdas genom att hämta fler sidor vid stor radie, vilket kostar
+   bandbredd — omkring 3 MB vid 25 km — och inte är gjort.
+6. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd. Fyra rader
+   visas från början och "Visa fler" lägger till fyra i taget. Erbjudandena
+   hämtas en gång per plats och radie; kryssrutorna arbetar sedan på den redan
+   hämtade listan.
 7. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
    rabatt först, blir söktermer. Fem recept visas åt gången.
 
@@ -368,9 +382,10 @@ Plats, annars är ortssökningen vägen framåt.
   giltighetstexten, som räknas i hela dygn och därför måste klara årsskiften och
   tidszoner.
 - **[offers.service.spec.ts](src/app/core/offers.service.spec.ts)** täcker
-  sammanställningen: att icke-mat sållas bort, att kedjorna sorteras med den
-  närmaste butiken först, att den närmaste av flera butiker vinner, och att en
-  kedja utan känd butik hamnar sist utan avstånd.
+  sammanställningen: att icke-mat sållas bort, att kedjelistan byggs på
+  butikerna och inte på erbjudandena, att en kedja med erbjudanden men utan
+  butik i närheten inte listas, och att den närmaste av flera butiker ger
+  avståndet.
 - **[chain-filter.component.spec.ts](src/app/components/chain-filter.component.spec.ts)**
   täcker listan: fyra rader från början, fler när favoriterna är fler, fyra till
   per klick, att knappen försvinner när allt visas, och att en utfälld lista

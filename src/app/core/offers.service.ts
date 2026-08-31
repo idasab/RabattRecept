@@ -9,9 +9,9 @@ import { TjekDealer, TjekOffer, TjekService, TjekStore } from './tjek.service';
 const FALLBACK_COLOR = '#6b7f96';
 
 /**
- * Översätter källans erbjudanden till appens form: sållar bort allt som inte
- * är mat, räknar fram rabatten och sammanställer vilka kedjor som finns i
- * närheten och hur nära de ligger. Resten av appen ser bara den här formen.
+ * Översätter källans data till appens form: kedjelistan byggs på butikerna,
+ * erbjudandena sållas till mat, och rabatten räknas fram. Resten av appen ser
+ * bara den här formen.
  */
 @Injectable({ providedIn: 'root' })
 export class OffersService {
@@ -30,7 +30,7 @@ export class OffersService {
         return {
           place,
           radiusKm,
-          chains: this.chainsFrom(grocery, this.nearestStoreByDealer(place, stores)),
+          chains: this.chainsFrom(stores, place),
           offers: grocery.map((offer) => this.toOffer(offer)),
           fetchedAt: new Date().toISOString(),
         };
@@ -59,72 +59,43 @@ export class OffersService {
     };
   }
 
-  /** Avståndet till varje kedjas närmaste butik, i kilometer. */
-  private nearestStoreByDealer(place: Place, stores: TjekStore[]): Map<string, number> {
-    const nearest = new Map<string, number>();
+  /**
+   * En rad per matkedja med butik inom radien, närmast först.
+   *
+   * Butikerna är källan och inte erbjudandena, av två skäl. De växer monotont
+   * med radien, så listan tappar aldrig en kedja när man drar ut reglaget. Och
+   * de bär koordinaterna, så avståndet kommer från samma anrop.
+   */
+  private chainsFrom(stores: readonly TjekStore[], place: Place): Chain[] {
+    const nearest = new Map<string, { dealer: TjekDealer; km: number }>();
 
     for (const store of stores) {
+      const dealer = store.dealer;
+      if (!dealer || !groceryBrandFor(dealer.website)) {
+        continue;
+      }
       if (store.latitude === null || store.longitude === null) {
         continue;
       }
 
       const km = distanceKm(place, { latitude: store.latitude, longitude: store.longitude });
-      const known = nearest.get(store.dealer_id);
-      if (known === undefined || km < known) {
-        nearest.set(store.dealer_id, km);
+      const known = nearest.get(dealer.id);
+      if (!known || km < known.km) {
+        nearest.set(dealer.id, { dealer, km });
       }
     }
 
-    return nearest;
-  }
-
-  /** En rad per butiksformat, närmast först. */
-  private chainsFrom(offers: TjekOffer[], nearest: Map<string, number>): Chain[] {
-    const counts = new Map<string, { dealer: TjekDealer; count: number }>();
-
-    for (const offer of offers) {
-      const entry = counts.get(offer.dealer.id);
-      if (entry) {
-        entry.count += 1;
-      } else {
-        counts.set(offer.dealer.id, { dealer: offer.dealer, count: 1 });
-      }
-    }
-
-    return [...counts.values()]
-      .map(({ dealer, count }) => ({
+    return [...nearest.values()]
+      .map(({ dealer, km }) => ({
         id: dealer.id,
         name: dealer.name,
         brand: groceryBrandFor(dealer.website) ?? dealer.name,
         color: this.colorOf(dealer),
         logo: dealer.logo,
-        offerCount: count,
-        distanceKm: nearest.get(dealer.id) ?? null,
+        distanceKm: km,
       }))
-      .sort(this.byDistance);
+      .sort(byDistance);
   }
-
-  /**
-   * Närmast först. Kedjor utan känd butik hamnar sist i stället för att
-   * räknas som noll kilometer, och sorteras då varumärkesvis som förut.
-   */
-  private byDistance = (a: Chain, b: Chain): number => {
-    if (a.distanceKm !== null && b.distanceKm !== null) {
-      return a.distanceKm - b.distanceKm || a.name.localeCompare(b.name, 'sv');
-    }
-    if (a.distanceKm !== null) {
-      return -1;
-    }
-    if (b.distanceKm !== null) {
-      return 1;
-    }
-
-    return (
-      brandOrder(a.brand) - brandOrder(b.brand) ||
-      b.offerCount - a.offerCount ||
-      a.name.localeCompare(b.name, 'sv')
-    );
-  };
 
   private colorOf(dealer: TjekDealer): string {
     const color = dealer.color?.trim();
@@ -133,4 +104,22 @@ export class OffersService {
     }
     return color.startsWith('#') ? color : `#${color}`;
   }
+}
+
+/**
+ * Närmast först. Kedjor utan känt avstånd hamnar sist i stället för att räknas
+ * som noll kilometer, och sorteras då varumärkesvis.
+ */
+function byDistance(a: Chain, b: Chain): number {
+  if (a.distanceKm !== null && b.distanceKm !== null) {
+    return a.distanceKm - b.distanceKm || a.name.localeCompare(b.name, 'sv');
+  }
+  if (a.distanceKm !== null) {
+    return -1;
+  }
+  if (b.distanceKm !== null) {
+    return 1;
+  }
+
+  return brandOrder(a.brand) - brandOrder(b.brand) || a.name.localeCompare(b.name, 'sv');
 }

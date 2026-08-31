@@ -42,7 +42,6 @@ const BOARD: OfferBoard = {
       brand: 'Willys',
       color: '#e60219',
       logo: null,
-      offerCount: 1,
       distanceKm: 0.4,
     },
     {
@@ -51,7 +50,6 @@ const BOARD: OfferBoard = {
       brand: 'Coop',
       color: '#005537',
       logo: null,
-      offerCount: 1,
       distanceKm: 1.2,
     },
   ],

@@ -38,9 +38,10 @@ export interface TjekDealer {
 
 export interface TjekStore {
   id: string;
-  dealer_id: string;
   latitude: number | null;
   longitude: number | null;
+  /** Kedjan butiken hör till, med namn, färg och webbadress. */
+  dealer?: TjekDealer;
 }
 
 export interface TjekOffer {
@@ -73,9 +74,9 @@ export class TjekService {
   }
 
   /**
-   * Butikerna inom radien. Används bara för att räkna ut hur nära varje kedja
-   * ligger; misslyckas hämtningen får kedjorna stå utan avstånd i stället för
-   * att hela sidan blir ett fel.
+   * Butikerna inom radien. De bär både kedjelistan och avstånden, och till
+   * skillnad från erbjudandena växer de monotont med radien — därför är de
+   * källan till vilka kedjor som finns i närheten.
    */
   storesNear(coordinates: Coordinates, radiusMeters: number): Observable<TjekStore[]> {
     const pages = Array.from({ length: MAX_STORE_PAGES }, (_, index) =>
