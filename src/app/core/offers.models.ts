@@ -52,12 +52,3 @@ export interface Offer {
   /** Sista giltighetsdag som ISO-sträng. */
   validUntil: string;
 }
-
-/** Allt som en hämtning ger: platsen, kedjorna i närheten och erbjudandena. */
-export interface OfferBoard {
-  place: Place;
-  radiusKm: number;
-  chains: Chain[];
-  offers: Offer[];
-  fetchedAt: string;
-}

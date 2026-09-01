@@ -3,7 +3,7 @@ import { Observable, of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { GeocodingService } from './core/geocoding.service';
 import { LocationError, LocationService } from './core/location.service';
-import { Coordinates, Offer, OfferBoard, Place } from './core/offers.models';
+import { Chain, Coordinates, Offer, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
 import { Recipe } from './core/recipes.models';
 import { RecipesService } from './core/recipes.service';
@@ -32,10 +32,7 @@ function offer(
   };
 }
 
-const BOARD: OfferBoard = {
-  place: PLACE,
-  radiusKm: 5,
-  chains: [
+const CHAINS: Chain[] = [
     {
       id: 'willys',
       name: 'Willys',
@@ -52,13 +49,12 @@ const BOARD: OfferBoard = {
       logo: null,
       distanceKm: 1.2,
     },
-  ],
-  offers: [
-    offer('1', 'willys', 'Willys', 'Kycklinglårfilé', 'Kronfågel. Ursprung Sverige.'),
-    offer('2', 'coop', 'Coop', 'Fläskytterfilé', 'Ursprung Tyskland.'),
-  ],
-  fetchedAt: '2026-08-28T07:00:00.000Z',
-};
+];
+
+const OFFERS: Offer[] = [
+  offer('1', 'willys', 'Willys', 'Kycklinglårfilé', 'Kronfågel. Ursprung Sverige.'),
+  offer('2', 'coop', 'Coop', 'Fläskytterfilé', 'Ursprung Tyskland.'),
+];
 
 class StubLocationService {
   result: Coordinates | LocationError = { latitude: 59, longitude: 18 };
@@ -81,8 +77,16 @@ class StubGeocodingService {
 }
 
 class StubOffersService {
-  board(): Observable<OfferBoard> {
-    return of(BOARD);
+  /** Räknar hur många gånger den tunga hämtningen faktiskt gjordes. */
+  offerFetches = 0;
+
+  chains(): Observable<Chain[]> {
+    return of(CHAINS);
+  }
+
+  offers(): Observable<Offer[]> {
+    this.offerFetches += 1;
+    return of(OFFERS);
   }
 }
 
@@ -179,17 +183,37 @@ describe('AppComponent', () => {
     expect(fixture.componentInstance.selectedOffers().length).toBe(0);
   });
 
-  it('söker inga recept förrän något är ikryssat', async () => {
+  it('hämtar inga erbjudanden förrän något är ikryssat', async () => {
     await create();
+
+    // Kedjelistan kommer från butikerna och är billig. Erbjudandena är den
+    // tunga hämtningen och ska vänta.
+    const offers = TestBed.inject(OffersService) as unknown as StubOffersService;
+    expect(offers.offerFetches).toBe(0);
 
     const recipes = TestBed.inject(RecipesService) as unknown as StubRecipesService;
     expect(recipes.lastSeedChains).toEqual([]);
+  });
+
+  it('hämtar erbjudandena vid första krysset, men inte vid nästa', async () => {
+    await create();
+    const offers = TestBed.inject(OffersService) as unknown as StubOffersService;
+
+    checkboxes()[0].click();
+    await fixture.whenStable();
+    expect(offers.offerFetches).toBe(1);
+
+    checkboxes()[1].click();
+    await fixture.whenStable();
+    // Samma plats och radie: erbjudandena finns redan.
+    expect(offers.offerFetches).toBe(1);
   });
 
   it('tar med kedjans erbjudanden när kryssrutan bockas i', async () => {
     await create();
 
     checkboxes()[0].click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const valda = fixture.componentInstance.selectedOffers();
@@ -212,6 +236,7 @@ describe('AppComponent', () => {
 
     // Stjärnmärk Coop, som ligger sist.
     stars()[1].click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(chainNames()).toEqual(['Coop', 'Willys']);
@@ -240,6 +265,7 @@ describe('AppComponent', () => {
 
     // Willys kryssas i utöver favoriten, alltså bara för det här besöket.
     checkboxes()[1].click();
+    await fixture.whenStable();
     expect(fixture.componentInstance.selected().size).toBe(2);
 
     await restart();
@@ -264,6 +290,7 @@ describe('AppComponent', () => {
     await create();
     fixture.componentInstance.toggleChain('willys');
     fixture.componentInstance.toggleChain('coop');
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
@@ -279,11 +306,13 @@ describe('AppComponent', () => {
     await create();
     fixture.componentInstance.toggleChain('willys');
     fixture.componentInstance.toggleChain('coop');
+    await fixture.whenStable();
     fixture.componentInstance.excludeFood('Fläsk');
 
     await restart();
 
     expect(fixture.componentInstance.excludedFoods()).toEqual(['Fläsk']);
+    await fixture.whenStable();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 
@@ -291,6 +320,7 @@ describe('AppComponent', () => {
     await create();
     fixture.componentInstance.toggleChain('willys');
     fixture.componentInstance.toggleChain('coop');
+    await fixture.whenStable();
     fixture.componentInstance.excludeFood('fläsk');
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
@@ -371,6 +401,7 @@ describe('AppComponent', () => {
     await create();
     fixture.componentInstance.toggleChain('willys');
     fixture.componentInstance.toggleChain('coop');
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.componentInstance.selectedOffers().length).toBe(2);
 
@@ -387,11 +418,13 @@ describe('AppComponent', () => {
     await create();
     fixture.componentInstance.toggleChain('willys');
     fixture.componentInstance.toggleChain('coop');
+    await fixture.whenStable();
     fixture.componentInstance.chooseSwedishMeat(true);
 
     await restart();
 
     expect(fixture.componentInstance.onlySwedishMeat()).toBeTrue();
+    await fixture.whenStable();
     expect(fixture.componentInstance.selectedOffers().length).toBe(1);
   });
 

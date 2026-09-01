@@ -2,8 +2,8 @@
   <header class="top">
     <div class="title">
       <p class="eyebrow">Laga av veckans rea</p>
-      <h1>{{ board()?.place?.name || 'Rabatter nära dig' }}</h1>
-      <p class="summary" *ngIf="board() as current">
+      <h1>{{ place()?.name || 'Rabatter nära dig' }}</h1>
+      <p class="summary" *ngIf="chains().length">
         {{ selectedOffers().length }}
         {{ selectedOffers().length === 1 ? 'rabatterad vara' : 'rabatterade varor' }} från
         {{ selected().size }} {{ selected().size === 1 ? 'vald kedja' : 'valda kedjor' }}
@@ -140,7 +140,7 @@
     (toggle)="toggleCookingTime($event)"
   ></app-cooking-time-filter>
 
-  <section class="recipes-head" *ngIf="board()">
+  <section class="recipes-head" *ngIf="chains().length">
     <h2 class="card-heading">Recept på det som är billigt</h2>
     <p class="lead">
       Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg från minst
@@ -165,7 +165,7 @@
     Inget av de {{ recipes().length }} recepten ryms i de valda tidsspannen. Kryssa i fler.
   </p>
 
-  <p class="empty" *ngIf="board() && !recipesLoading() && !recipes().length && !recipesError()">
+  <p class="empty" *ngIf="chains().length && !recipesLoading() && !recipes().length && !recipesError()">
     <ng-container *ngIf="!chains().length">
       Inga matkedjor med erbjudanden hittades inom {{ radiusKm() }} km. Prova ett större avstånd.
     </ng-container>
@@ -181,9 +181,9 @@
     </ng-container>
   </p>
 
-  <p class="loading" *ngIf="loading() && !board()">Hämtar erbjudanden …</p>
+  <p class="loading" *ngIf="loading() && !chains().length">Hämtar kedjor …</p>
 
-  <footer class="foot" *ngIf="board()">
+  <footer class="foot" *ngIf="chains().length">
     Erbjudanden från butikernas reklamblad via Tjek, recept och betyg från Tasteline och Zeta.
     Priser och giltighet kan skilja sig åt mellan butiker i samma kedja.
   </footer>

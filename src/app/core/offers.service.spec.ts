@@ -63,9 +63,8 @@ describe('OffersService', () => {
       store('byggmax', 57.72, 'Byggmax', 'http://byggmax.se/'),
     ];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.chains.map((chain) => chain.name)).toEqual(['Willys']);
-      expect(board.offers.map((entry) => entry.id)).toEqual(['1']);
+    service.chains(PLACE, 5).subscribe((chains) => {
+      expect(chains.map((chain) => chain.name)).toEqual(['Willys']);
       done();
     });
   });
@@ -79,8 +78,8 @@ describe('OffersService', () => {
       store('willys', 57.71, 'Willys', 'https://willys.se/'),
     ];
 
-    service.board(PLACE, 25).subscribe((board) => {
-      expect(board.chains.map((chain) => chain.name)).toEqual(['Willys', 'Coop']);
+    service.chains(PLACE, 25).subscribe((chains) => {
+      expect(chains.map((chain) => chain.name)).toEqual(['Willys', 'Coop']);
       done();
     });
   });
@@ -90,8 +89,8 @@ describe('OffersService', () => {
     tjek.offers = [offer('1', 'hemkop', 'Hemköp', 'https://www.hemkop.se/')];
     tjek.stores = [store('willys', 57.71, 'Willys', 'https://willys.se/')];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.chains.map((chain) => chain.name)).toEqual(['Willys']);
+    service.chains(PLACE, 5).subscribe((chains) => {
+      expect(chains.map((chain) => chain.name)).toEqual(['Willys']);
       done();
     });
   });
@@ -103,9 +102,9 @@ describe('OffersService', () => {
       store('nara', 57.71, 'Willys', 'https://willys.se/'),
     ];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.chains.map((chain) => chain.name)).toEqual(['Willys', 'Coop']);
-      expect(board.chains[0].distanceKm).toBeLessThan(board.chains[1].distanceKm as number);
+    service.chains(PLACE, 5).subscribe((chains) => {
+      expect(chains.map((chain) => chain.name)).toEqual(['Willys', 'Coop']);
+      expect(chains[0].distanceKm).toBeLessThan(chains[1].distanceKm as number);
       done();
     });
   });
@@ -113,8 +112,8 @@ describe('OffersService', () => {
   it('tar den närmaste butiken när kedjan har flera', (done) => {
     tjek.stores = [store('willys', 57.8), store('willys', 57.71), store('willys', 57.9)];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.chains[0].distanceKm).toBeCloseTo(1.11, 1);
+    service.chains(PLACE, 5).subscribe((chains) => {
+      expect(chains[0].distanceKm).toBeCloseTo(1.11, 1);
       done();
     });
   });
@@ -126,8 +125,8 @@ describe('OffersService', () => {
       store('willys', 57.71),
     ];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.chains.map((chain) => chain.name)).toEqual(['willys']);
+    service.chains(PLACE, 5).subscribe((chains) => {
+      expect(chains.map((chain) => chain.name)).toEqual(['willys']);
       done();
     });
   });
@@ -135,8 +134,20 @@ describe('OffersService', () => {
   it('räknar rabatten från ordinarie pris', (done) => {
     tjek.offers = [offer('1', 'willys', 'Willys', 'https://willys.se/')];
 
-    service.board(PLACE, 5).subscribe((board) => {
-      expect(board.offers[0].discount).toBeCloseTo(0.5, 5);
+    service.offers(PLACE, 5).subscribe((offers) => {
+      expect(offers[0].discount).toBeCloseTo(0.5, 5);
+      done();
+    });
+  });
+
+  it('sållar bort erbjudanden från kedjor som inte säljer mat', (done) => {
+    tjek.offers = [
+      offer('1', 'willys', 'Willys', 'https://willys.se/'),
+      offer('2', 'byggmax', 'Byggmax', 'http://byggmax.se/'),
+    ];
+
+    service.offers(PLACE, 5).subscribe((offers) => {
+      expect(offers.map((entry) => entry.id)).toEqual(['1']);
       done();
     });
   });

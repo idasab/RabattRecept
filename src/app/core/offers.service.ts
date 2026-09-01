@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { distanceKm } from './distance';
 import { brandOrder, groceryBrandFor } from './grocery-brands';
-import { Chain, Offer, OfferBoard, Place } from './offers.models';
+import { Chain, Offer, Place } from './offers.models';
 import { TjekDealer, TjekOffer, TjekService, TjekStore } from './tjek.service';
 
 /** Kedjor utan egen färg i källan får appens neutrala ton. */
@@ -12,29 +12,30 @@ const FALLBACK_COLOR = '#6b7f96';
  * Översätter källans data till appens form: kedjelistan byggs på butikerna,
  * erbjudandena sållas till mat, och rabatten räknas fram. Resten av appen ser
  * bara den här formen.
+ *
+ * Kedjorna och erbjudandena hämtas var för sig, med flit. Kedjelistan är
+ * billig och behövs direkt; erbjudandena är den tunga hämtningen — upp till
+ * sexton sidor vid stor radie — och behövs först när en kedja är ikryssad.
  */
 @Injectable({ providedIn: 'root' })
 export class OffersService {
   private readonly tjek = inject(TjekService);
 
-  board(place: Place, radiusKm: number): Observable<OfferBoard> {
-    const radiusMeters = radiusKm * 1000;
+  /** Matkedjorna med butik inom radien, närmast först. */
+  chains(place: Place, radiusKm: number): Observable<Chain[]> {
+    return this.tjek
+      .storesNear(place, radiusKm * 1000)
+      .pipe(map((stores) => this.chainsFrom(stores, place)));
+  }
 
-    return forkJoin({
-      offers: this.tjek.offersNear(place, radiusMeters),
-      stores: this.tjek.storesNear(place, radiusMeters),
-    }).pipe(
-      map(({ offers: raw, stores }) => {
-        const grocery = raw.filter((offer) => groceryBrandFor(offer.dealer?.website));
-
-        return {
-          place,
-          radiusKm,
-          chains: this.chainsFrom(stores, place),
-          offers: grocery.map((offer) => this.toOffer(offer)),
-          fetchedAt: new Date().toISOString(),
-        };
-      })
+  /** Erbjudandena inom radien, sållade till mat. */
+  offers(place: Place, radiusKm: number): Observable<Offer[]> {
+    return this.tjek.offersNear(place, radiusKm * 1000).pipe(
+      map((raw) =>
+        raw
+          .filter((offer) => groceryBrandFor(offer.dealer?.website))
+          .map((offer) => this.toOffer(offer))
+      )
     );
   }
 

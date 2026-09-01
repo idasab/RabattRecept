@@ -27,7 +27,7 @@ import { mainIngredientNames } from './core/main-ingredients';
 import { onlySwedishMeat } from './core/origin';
 import { LocationError, LocationService } from './core/location.service';
 import { filterOffers } from './core/offer-filter';
-import { Chain, Offer, OfferBoard, Place } from './core/offers.models';
+import { Chain, Offer, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
 import { Recipe } from './core/recipes.models';
 import { MIN_RATING, MIN_VOTES, RecipesService } from './core/recipes.service';
@@ -38,7 +38,8 @@ import { MIN_RATING, MIN_VOTES, RecipesService } from './core/recipes.service';
  * eftersom favoriter innebär att utgångsläget är omarkerat.
  */
 const SETTINGS_KEY = 'rabatt-recept.settings.v2';
-const BOARD_KEY = 'rabatt-recept.board.v1';
+/** Kedjelistan sparas så att appen har innehåll direkt när den öppnas. */
+const CHAINS_KEY = 'rabatt-recept.chains.v1';
 
 /** Avstånden man kan välja mellan, i kilometer. */
 const RADII = [2, 5, 10, 25];
@@ -100,7 +101,17 @@ export class AppComponent implements OnInit {
   /** Råvarorna appen känner igen, som förslag i uteslutningsfältet. */
   readonly knownFoods = mainIngredientNames();
 
-  readonly board = signal<OfferBoard | null>(null);
+  readonly place = signal<Place | null>(null);
+  /** Kedjorna som butikerna gav, i källans ordning. */
+  private readonly nearbyChains = signal<readonly Chain[]>([]);
+  /**
+   * Erbjudandena, hämtade först när en kedja är ikryssad. Nyckeln säger vilken
+   * plats och radie de gäller, så att ett nytt kryss inte hämtar om dem.
+   */
+  private readonly offersHeld = signal<readonly Offer[]>([]);
+  private readonly offersKey = signal<string | null>(null);
+  readonly fetchedAt = signal<string | null>(null);
+
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   /** Sant när felet beror på platsen, då hjälper det att peka på sökfältet. */
@@ -139,11 +150,14 @@ export class AppComponent implements OnInit {
     () => `${(this.radiusIndex() / (RADII.length - 1)) * 100}%`
   );
 
+  /**
+   * Favoriterna först. I övrigt behålls källans ordning, som redan är
+   * närmast först — sorteringen är stabil, så oavgjort lämnar raderna i fred.
+   */
   readonly chains = computed<readonly Chain[]>(() => {
     const favorites = this.favorites();
-    const chains = this.board()?.chains ?? [];
 
-    return [...chains].sort(
+    return [...this.nearbyChains()].sort(
       (a, b) => Number(!favorites.has(a.id)) - Number(!favorites.has(b.id))
     );
   });
@@ -155,7 +169,7 @@ export class AppComponent implements OnInit {
    * utan urvalsordning — det är de varorna det är värt att laga mat av.
    */
   readonly selectedOffers = computed<readonly Offer[]>(() => {
-    const fromChains = filterOffers(this.board()?.offers ?? [], {
+    const fromChains = filterOffers(this.offersHeld(), {
       chainIds: this.selected(),
       query: '',
       sort: 'discount',
@@ -205,7 +219,7 @@ export class AppComponent implements OnInit {
   });
 
   readonly fetchedLabel = computed(() => {
-    const at = this.board()?.fetchedAt;
+    const at = this.fetchedAt();
     if (!at) {
       return '';
     }
@@ -253,16 +267,15 @@ export class AppComponent implements OnInit {
       }
     }
 
-    // Det sparade underlaget visas direkt, så att appen har innehåll redan
+    // Den sparade kedjelistan visas direkt, så att appen har innehåll redan
     // innan nätet svarat — och något att visa alls när det inte svarar.
-    const cached = this.readBoard();
+    const cached = this.readChains();
     if (cached) {
-      this.board.set(cached);
-      this.reconcile(cached.chains);
-      this.requestRecipes();
+      this.nearbyChains.set(cached);
+      this.reconcile(cached);
     }
 
-    const place = settings?.place ?? cached?.place ?? null;
+    const place = settings?.place ?? null;
     if (place) {
       await this.load(place);
       return;
@@ -316,14 +329,14 @@ export class AppComponent implements OnInit {
     }
     this.radiusKm.set(radiusKm);
 
-    const place = this.board()?.place;
+    const place = this.place();
     if (place) {
       void this.load(place);
     }
   }
 
   refresh(): void {
-    const place = this.board()?.place;
+    const place = this.place();
     if (place) {
       void this.load(place);
     } else {
@@ -340,7 +353,7 @@ export class AppComponent implements OnInit {
     }
     this.selected.set(next);
     this.saveSettings();
-    this.requestRecipes();
+    void this.ensureOffers();
   }
 
   /** Stjärnan flyttar kedjan överst. Att märka en kedja kryssar också i den. */
@@ -354,7 +367,7 @@ export class AppComponent implements OnInit {
       const selected = new Set(this.selected());
       selected.add(id);
       this.selected.set(selected);
-      this.requestRecipes();
+      void this.ensureOffers();
     }
 
     this.favorites.set(favorites);
@@ -393,7 +406,7 @@ export class AppComponent implements OnInit {
   chooseSwedishMeat(only: boolean): void {
     this.onlySwedishMeat.set(only);
     this.saveSettings();
-    this.requestRecipes();
+    void this.ensureOffers();
   }
 
   allowFood(entry: string): void {
@@ -414,15 +427,21 @@ export class AppComponent implements OnInit {
     this.canSearchInstead.set(false);
 
     try {
-      const board = await firstValueFrom(this.offers.board(place, this.radiusKm()));
-      this.board.set(board);
-      this.reconcile(board.chains);
-      this.saveBoard(board);
+      const chains = await firstValueFrom(this.offers.chains(place, this.radiusKm()));
+      this.place.set(place);
+      this.nearbyChains.set(chains);
+      this.reconcile(chains);
+      this.saveChains(chains);
       this.saveSettings();
-      this.requestRecipes();
+
+      // Erbjudandena är den tunga hämtningen och behövs bara när något är
+      // ikryssat. Utan kryss stannar det här.
+      this.offersHeld.set([]);
+      this.offersKey.set(null);
+      await this.ensureOffers();
     } catch {
       this.error.set(
-        this.board()
+        this.nearbyChains().length
           ? 'Erbjudandena kunde inte uppdateras. Recepten nedan bygger på den senast hämtade rean.'
           : 'Erbjudandena kunde inte hämtas. Kontrollera uppkopplingen och försök igen.'
       );
@@ -470,14 +489,45 @@ export class AppComponent implements OnInit {
       excludedFoods: [...this.excludedFoods()],
       onlySwedishMeat: this.onlySwedishMeat(),
       cookingTimes: [...this.cookingTimes()],
-      place: this.board()?.place ?? null,
+      place: this.place(),
     };
 
     this.write(SETTINGS_KEY, settings);
   }
 
-  private saveBoard(board: OfferBoard): void {
-    this.write(BOARD_KEY, board);
+  private saveChains(chains: readonly Chain[]): void {
+    this.write(CHAINS_KEY, chains);
+  }
+
+  /**
+   * Hämtar erbjudandena om det behövs: bara när en kedja är ikryssad, och bara
+   * en gång per plats och radie. Att kryssa i en kedja till söker om recepten
+   * men hämtar inte om erbjudandena.
+   */
+  private async ensureOffers(): Promise<void> {
+    const place = this.place();
+    if (!place || !this.selected().size) {
+      return;
+    }
+
+    const key = `${place.latitude},${place.longitude}:${this.radiusKm()}`;
+    if (this.offersKey() === key) {
+      this.requestRecipes();
+      return;
+    }
+
+    this.recipesLoading.set(true);
+
+    try {
+      const offers = await firstValueFrom(this.offers.offers(place, this.radiusKm()));
+      this.offersHeld.set(offers);
+      this.offersKey.set(key);
+      this.fetchedAt.set(new Date().toISOString());
+      this.requestRecipes();
+    } catch {
+      this.recipesLoading.set(false);
+      this.recipesError.set('Erbjudandena kunde inte hämtas. Försök igen om en stund.');
+    }
   }
 
   private readSettings(): StoredSettings | null {
@@ -494,9 +544,9 @@ export class AppComponent implements OnInit {
     };
   }
 
-  private readBoard(): OfferBoard | null {
-    const stored = this.read<OfferBoard>(BOARD_KEY);
-    return stored?.offers && stored.chains ? stored : null;
+  private readChains(): readonly Chain[] | null {
+    const stored = this.read<Chain[]>(CHAINS_KEY);
+    return Array.isArray(stored) && stored.length ? stored : null;
   }
 
   private read<T>(key: string): T | null {

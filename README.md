@@ -82,14 +82,19 @@ npm run lint
    fyra hämtade sidorna. Kedjelistan tappade alltså kedjor när man drog ut
    reglaget. Butikerna växer däremot alltid med radien.
 
-   Kvarstående begränsning: en kedja kan stå i listan utan att dess erbjudanden
-   kom med i de fyra sidorna, och då ger den inga recept när man kryssar i den.
-   Det åtgärdas genom att hämta fler sidor vid stor radie, vilket kostar
-   bandbredd — omkring 3 MB vid 25 km — och inte är gjort.
+   Taket för antal sidor följer därför radien: fyra sidor vid 2 km, åtta vid 5,
+   tolv vid 10 och sexton vid 25. Sidorna hämtas i omgångar om fyra, och nästa
+   omgång begärs bara när hela den förra var full — en halvfull sida betyder att
+   erbjudandena tagit slut, så en liten ort betalar fortfarande för fyra anrop.
 6. **Kryssrutorna.** Kedjorna listas närmast först, med avstånd. Fyra rader
-   visas från början och "Visa fler" lägger till fyra i taget. Erbjudandena
-   hämtas en gång per plats och radie; kryssrutorna arbetar sedan på den redan
-   hämtade listan.
+   visas från början och "Visa fler" lägger till fyra i taget.
+
+   **Erbjudandena hämtas först när en kedja är ikryssad.** Kedjelistan kommer
+   från butikerna och är billig — tre anrop — medan erbjudandena är den tunga
+   hämtningen, upp till sexton sidor vid 25 km. Utan kryss finns inget att söka
+   recept på, och då ska ingenting hämtas. Sedan hämtas de en gång per plats och
+   radie: att kryssa i en kedja till söker om recepten men hämtar inte om
+   erbjudandena.
 7. **Recepten.** De ikryssade kedjornas rabatterade huvudråvaror, störst
    rabatt först, blir söktermer. Fem recept visas åt gången.
 
