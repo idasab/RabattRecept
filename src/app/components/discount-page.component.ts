@@ -11,13 +11,15 @@ const STEP = 15;
  * rabatter". Recepten är det appen är till för, men ibland vill man se själva
  * rean: vad som är nedsatt och hos vem.
  *
- * Kedjorna får varsin rubrik i stället för ett blandat flöde, eftersom man
- * handlar i en butik i taget. Ordningen är densamma som i kryssrutelistan —
- * favoriter först, sedan närmast — så att sidan känns igen.
+ * Kedjorna ligger hopfällda var för sig, eftersom man handlar i en butik i
+ * taget: hela listan får plats på en skärm, och man fäller ut den man är på
+ * väg till. Flera får vara öppna samtidigt — att jämföra två butiker är ett
+ * riktigt ärende. Ordningen är densamma som i kryssrutelistan, favoriter
+ * först och sedan närmast, så att sidan känns igen.
  *
- * Varje kedja börjar med femton rader och växer på begäran. En storstadsradie
- * ger flera hundra rabatter, och att rendera alla på en gång gör sidan trög på
- * en telefon.
+ * En utfälld kedja börjar med femton rader och växer på begäran. En
+ * storstadsradie ger flera hundra rabatter, och att rendera alla på en gång
+ * gör sidan trög på en telefon.
  */
 @Component({
   selector: 'app-discount-page',
@@ -51,25 +53,49 @@ const STEP = 15;
       </div>
 
       <section class="group" *ngFor="let group of groups; trackBy: trackByChain">
-        <header class="group-head">
-          <span class="dot" aria-hidden="true" [style.background]="group.chain.color"></span>
-          <h2 class="card-heading">{{ group.chain.name }}</h2>
-          <span class="count">{{ group.offers.length }}</span>
-        </header>
+        <h2 class="group-head">
+          <!-- Tom kedja går inte att öppna: det finns inget bakom fliken, och
+               en flik som viker undan för att visa ingenting är ett löfte som
+               inte hålls. Antalet säger det i stället. -->
+          <button
+            type="button"
+            class="toggle"
+            [disabled]="!group.offers.length"
+            [attr.aria-expanded]="isOpen(group)"
+            [attr.aria-controls]="panelId(group)"
+            (click)="toggle(group)"
+          >
+            <span class="dot" aria-hidden="true" [style.background]="group.chain.color"></span>
+            <!-- &ngsp; behövs: Angular klipper bort blanktecknet mellan taggarna,
+                 och utan det läses fliken upp som "Tempo22". -->
+            <span class="name card-heading">{{ group.chain.name }}</span>&ngsp;
+            <span class="count">{{ count(group) }}</span>
+            <svg
+              *ngIf="group.offers.length"
+              class="chevron"
+              [class.open]="isOpen(group)"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 9.5 12 15.5 18 9.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </h2>
 
-        <app-offer-list
-          *ngIf="group.offers.length"
-          [offers]="visible(group)"
-          [showChain]="false"
-        ></app-offer-list>
+        <div class="panel" [id]="panelId(group)" *ngIf="isOpen(group)">
+          <app-offer-list [offers]="visible(group)" [showChain]="false"></app-offer-list>
 
-        <p class="empty" *ngIf="!group.offers.length">
-          Inga rabatter på mat hos {{ group.chain.name }} den här veckan.
-        </p>
-
-        <button *ngIf="remaining(group)" type="button" class="more" (click)="showMore(group)">
-          Visa fler <span class="remaining">{{ remaining(group) }} kvar</span>
-        </button>
+          <button *ngIf="remaining(group)" type="button" class="more" (click)="showMore(group)">
+            Visa fler <span class="remaining">{{ remaining(group) }} kvar</span>
+          </button>
+        </div>
       </section>
 
       <p class="empty" *ngIf="!groups.length">
@@ -155,14 +181,38 @@ const STEP = 15;
 
       .group {
         display: grid;
-        gap: 8px;
+        gap: 10px;
       }
 
       .group-head {
+        margin: 0;
+      }
+
+      /* Hela raden är fliken. 52 px är väl över minsta bekväma träffyta på en
+         telefon, och raden ska se ut som ett kort man trycker på. */
+      .toggle {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px 4px 0;
+        gap: 10px;
+        width: 100%;
+        min-height: 52px;
+        padding: 0 16px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        text-align: left;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* En kedja utan rabatter ska stå kvar i listan men inte se ut som en
+         knapp: den är ett besked, inte en väg vidare. */
+      .toggle:disabled {
+        border-style: dashed;
+        background: none;
+        box-shadow: none;
+        cursor: default;
       }
 
       .dot {
@@ -172,12 +222,20 @@ const STEP = 15;
         border-radius: 50%;
       }
 
-      .group-head .card-heading {
+      .toggle:disabled .dot {
+        opacity: 0.45;
+      }
+
+      .name {
         flex: 1;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .toggle:disabled .name {
+        color: var(--text-faint);
       }
 
       .count {
@@ -187,12 +245,31 @@ const STEP = 15;
         color: var(--text-faint);
       }
 
+      .chevron {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        margin-right: -4px;
+        color: var(--accent);
+        transition: transform 150ms ease;
+      }
+
+      .chevron.open {
+        transform: rotate(180deg);
+      }
+
+      .panel {
+        display: grid;
+        gap: 10px;
+      }
+
       .more {
         justify-self: start;
         display: flex;
         align-items: center;
         gap: 7px;
         min-height: 36px;
+        margin-bottom: 4px;
         padding: 0 4px;
         border: 0;
         background: none;
@@ -228,9 +305,33 @@ export class DiscountPageComponent {
 
   /** Hur många rader som fällts ut per kedja. Utan post gäller STEP. */
   private readonly shown = new Map<string, number>();
+  /** Vilka kedjor man öppnat eller stängt. Utan post gäller utgångsläget. */
+  private readonly opened = new Map<string, boolean>();
 
   get total(): number {
     return this.groups.reduce((sum, group) => sum + group.offers.length, 0);
+  }
+
+  /**
+   * Kedjorna börjar hopfällda, så att man ser dem alla och väljer själv vilken
+   * man vill titta i. Är bara en kedja ikryssad finns inget att välja mellan,
+   * och då är fliken bara ett klick i vägen — den ligger öppen från början.
+   */
+  isOpen(group: OfferGroup): boolean {
+    return this.opened.get(group.chain.id) ?? this.groups.length === 1;
+  }
+
+  toggle(group: OfferGroup): void {
+    this.opened.set(group.chain.id, !this.isOpen(group));
+  }
+
+  /** Antalet i fliken, eller beskedet att kedjan inte hade något alls. */
+  count(group: OfferGroup): string {
+    return group.offers.length ? String(group.offers.length) : 'inga rabatter';
+  }
+
+  panelId(group: OfferGroup): string {
+    return 'rabatter-' + group.chain.id;
   }
 
   visible(group: OfferGroup): readonly Offer[] {

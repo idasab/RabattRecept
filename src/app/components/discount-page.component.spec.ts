@@ -34,14 +34,21 @@ describe('DiscountPageComponent', () => {
     fixture.detectChanges();
   }
 
-  function headings(): string[] {
-    return Array.from(host().querySelectorAll('.group-head .card-heading')).map(
-      (element) => element.textContent?.trim() ?? ''
-    );
+  function tabs(): HTMLButtonElement[] {
+    return Array.from(host().querySelectorAll<HTMLButtonElement>('.toggle'));
+  }
+
+  function labels(): string[] {
+    return tabs().map((tab) => tab.textContent?.replace(/\s+/g, ' ').trim() ?? '');
   }
 
   function rows(): number {
     return host().querySelectorAll('app-offer-list .offer').length;
+  }
+
+  function open(index: number): void {
+    tabs()[index].click();
+    fixture.detectChanges();
   }
 
   beforeEach(() => {
@@ -53,23 +60,64 @@ describe('DiscountPageComponent', () => {
     ]);
   });
 
-  it('samlar rabatterna under varsin kedjerubrik, i den ordning de kommer', () => {
-    expect(headings()).toEqual(['Willys', 'Coop']);
-    expect(rows()).toBe(5);
+  it('visar kedjorna hopfällda, med antalet i fliken', () => {
+    expect(labels()).toEqual(['Willys 3', 'Coop 2']);
+    expect(rows()).toBe(0);
   });
 
   it('räknar ihop varorna och kedjorna överst', () => {
     expect(host().querySelector('.summary')?.textContent).toContain('5 varor från 2 kedjor');
   });
 
-  it('upprepar inte kedjenamnet i varje rad när det redan står i rubriken', () => {
+  it('fäller ut den kedja man trycker på, och bara den', () => {
+    open(0);
+
+    expect(rows()).toBe(3);
+    expect(tabs()[0].getAttribute('aria-expanded')).toBe('true');
+    expect(tabs()[1].getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('låter flera kedjor vara öppna samtidigt, för att kunna jämföras', () => {
+    open(0);
+    open(1);
+
+    expect(rows()).toBe(5);
+    expect(host().querySelectorAll('app-offer-list').length).toBe(2);
+  });
+
+  it('fäller ihop igen vid ett andra tryck', () => {
+    open(0);
+    open(0);
+
+    expect(rows()).toBe(0);
+  });
+
+  it('pekar ut panelen den styr, så att den kan följas av en skärmläsare', () => {
+    open(0);
+
+    const id = tabs()[0].getAttribute('aria-controls');
+    expect(id).toBe('rabatter-willys');
+    expect(host().querySelector('#' + id)).not.toBeNull();
+  });
+
+  it('upprepar inte kedjenamnet i varje rad när det redan står i fliken', () => {
+    open(0);
+
     expect(host().querySelector('app-offer-list .chain')).toBeNull();
   });
 
-  it('säger ifrån när en ikryssad kedja inte hade något', () => {
+  it('ligger öppen från början när bara en kedja är ikryssad', () => {
+    // Då finns inget att välja mellan, och fliken vore bara ett klick i vägen.
+    setGroups([{ chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 3) }]);
+
+    expect(rows()).toBe(3);
+  });
+
+  it('går inte att öppna när kedjan inte hade något', () => {
     setGroups([{ chain: chain('lidl', 'Lidl'), offers: [] }]);
 
-    expect(host().textContent).toContain('Inga rabatter på mat hos Lidl');
+    expect(labels()).toEqual(['Lidl inga rabatter']);
+    expect(tabs()[0].disabled).toBeTrue();
   });
 
   it('visar femton rader per kedja och fäller ut resten på begäran', () => {
@@ -86,11 +134,13 @@ describe('DiscountPageComponent', () => {
     expect(rows()).toBe(30);
   });
 
-  it('fäller ut en kedja i taget', () => {
+  it('utvidgar en kedja i taget', () => {
     setGroups([
       { chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 40) },
       { chain: chain('coop', 'Coop'), offers: offers('coop', 'Coop', 40) },
     ]);
+    open(0);
+    open(1);
 
     host().querySelectorAll<HTMLButtonElement>('.more')[0].click();
     fixture.detectChanges();

@@ -505,7 +505,7 @@ describe('AppComponent', () => {
     expect(
       Array.from(
         (fixture.nativeElement as HTMLElement).querySelectorAll(
-          'app-discount-page .group-head .card-heading'
+          'app-discount-page .toggle .name'
         )
       ).map((heading) => heading.textContent?.trim())
     ).toEqual(['Willys', 'Coop']);
