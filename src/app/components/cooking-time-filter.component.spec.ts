@@ -57,26 +57,14 @@ describe('CookingTimeFilterComponent', () => {
     expect(toggled).toEqual(['långkok']);
   });
 
-  it('visar hur många recept varje spann rymmer', () => {
-    fixture.componentInstance.counts = { snabbt: 4, lagom: 11, långkok: 2 };
-    fixture.detectChanges();
-
-    const counts = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('.count')
-    ).map((count) => count.textContent?.trim());
-
-    expect(counts).toEqual(['4', '11', '2']);
+  it('visar inga antal i rutorna', () => {
+    // Siffran svarade på en fråga ingen ställde: man kryssar i den tid man
+    // har, inte den ruta som råkar rymma flest recept.
+    expect((fixture.nativeElement as HTMLElement).querySelector('.count')).toBeNull();
   });
 
-  it('sätter antalet i etiketten, där siffran får sitt sammanhang', () => {
-    fixture.componentInstance.counts = { lagom: 11 };
-    fixture.detectChanges();
-
-    // Uppläst är den utskriven: "< 30" säger ingenting i en skärmläsare.
-    expect(boxes()[1].getAttribute('aria-label')).toBe('30 till 60 minuter, 11 recept');
-  });
-
-  it('skriver noll för spann utan recept', () => {
-    expect(boxes()[0].getAttribute('aria-label')).toBe('Under 30 minuter, 0 recept');
+  it('skriver ut spannet i etiketten, för "< 30" säger inget uppläst', () => {
+    expect(boxes()[0].getAttribute('aria-label')).toBe('Under 30 minuter');
+    expect(boxes()[1].getAttribute('aria-label')).toBe('30 till 60 minuter');
   });
 });

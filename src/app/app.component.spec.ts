@@ -147,6 +147,12 @@ describe('AppComponent', () => {
     return create();
   }
 
+  /** Fäller ut plats och avstånd, som ligger hopfällda när platsen är satt. */
+  function openPlace(): void {
+    element<HTMLButtonElement>('.place-toggle')?.click();
+    fixture.detectChanges();
+  }
+
   function checkboxes(): HTMLInputElement[] {
     return Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
@@ -450,6 +456,7 @@ describe('AppComponent', () => {
 
   it('visar reglagets läge som avstånd, inte som index', async () => {
     await create();
+    openPlace();
     const slider = element<HTMLInputElement>('#app-radius');
 
     expect(slider?.value).toBe('1');
@@ -457,17 +464,39 @@ describe('AppComponent', () => {
     expect(element('.radius-head output')?.textContent?.trim()).toBe('5 km');
   });
 
-  it('har en platsknapp på rubrikraden som hämtar positionen', async () => {
+  it('har en platsknapp bredvid sökfältet som hämtar positionen', async () => {
     location.result = { latitude: 59, longitude: 18 };
     await create();
+    openPlace();
 
-    const button = element<HTMLButtonElement>('.place .head .locate');
+    const button = element<HTMLButtonElement>('.place-row .locate');
     expect(button?.textContent?.trim()).toContain('Min plats');
 
     // Knappen låses medan hämtningen pågår, så den inte trycks två gånger.
     fixture.componentInstance.loading.set(true);
     fixture.detectChanges();
-    expect(element<HTMLButtonElement>('.place .head .locate')?.disabled).toBeTrue();
+    expect(element<HTMLButtonElement>('.place-row .locate')?.disabled).toBeTrue();
+  });
+
+  it('fäller ihop platsvalet när platsen är satt, och visar radien i raden', async () => {
+    await create();
+
+    // Något man ställer in sällan ska inte ta plats varje gång.
+    expect(element('#app-place-body')).toBeNull();
+    expect(element('.place-label')?.textContent?.trim()).toBe('Inom 5 km');
+
+    openPlace();
+    expect(element('#app-place-body')).not.toBeNull();
+  });
+
+  it('har platsvalet framme när platsen inte gick att hämta', async () => {
+    location.result = new LocationError('denied', 'Nekad.');
+
+    await create();
+
+    // Sökfältet är det enda som återstår, så det får inte ligga hopfällt.
+    expect(element('#app-place-body')).not.toBeNull();
+    expect(element('.place-label')?.textContent?.trim()).toBe('Välj plats');
   });
 
   it('erbjuder ortssökning när platsen nekas', async () => {

@@ -17,12 +17,7 @@ import { CookingTimeFilterComponent } from './components/cooking-time-filter.com
 import { SettingsMenuComponent } from './components/settings-menu.component';
 import { PlaceSearchComponent } from './components/place-search.component';
 import { RecipeListComponent } from './components/recipe-list.component';
-import {
-  COOKING_TIME_BANDS,
-  CookingTimeBand,
-  bandFor,
-  withinCookingTime,
-} from './core/cooking-time';
+import { COOKING_TIME_BANDS, CookingTimeBand, withinCookingTime } from './core/cooking-time';
 import { addExclusion, removeExclusion, withoutExcluded } from './core/food-exclusions';
 import { GeocodingService } from './core/geocoding.service';
 import { mainIngredientNames } from './core/main-ingredients';
@@ -123,7 +118,6 @@ export class AppComponent implements OnInit {
    */
   private readonly offersHeld = signal<readonly Offer[]>([]);
   private readonly offersKey = signal<string | null>(null);
-  readonly fetchedAt = signal<string | null>(null);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -140,6 +134,12 @@ export class AppComponent implements OnInit {
     new Set(COOKING_TIME_BANDS.map((band) => band.id))
   );
   readonly settingsOpen = signal(false);
+  /**
+   * Om platsvalet är utfällt. Plats och avstånd ställer man in sällan, så de
+   * ligger hopfällda bakom en rad när det finns en plats att fälla ihop till.
+   * Utan plats står de öppna: det är det första man behöver göra.
+   */
+  readonly placeOpen = signal(true);
   /**
    * Varugrupperna man fällt ihop på rabattsidan. De ligger bland de sparade
    * inställningarna och inte i sidan själv, för att en avdelning är
@@ -239,18 +239,6 @@ export class AppComponent implements OnInit {
     withinCookingTime(this.recipes(), this.cookingTimes())
   );
 
-  /** Hur många recept varje tidsspann rymmer, som siffra i rutan. */
-  readonly cookingTimeCounts = computed(() => {
-    const counts: Partial<Record<CookingTimeBand, number>> = {};
-    for (const recipe of this.recipes()) {
-      const band = bandFor(recipe);
-      if (band) {
-        counts[band] = (counts[band] ?? 0) + 1;
-      }
-    }
-    return counts;
-  });
-
   /**
    * Hur många inställningar som är påslagna, som siffra på kugghjulet. Både
    * uteslutna varor och svenskfiltret räknas, för båda ändrar hela
@@ -273,13 +261,10 @@ export class AppComponent implements OnInit {
     return `Inställningar, ${count} ${count === 1 ? 'aktiv' : 'aktiva'}`;
   });
 
-  readonly fetchedLabel = computed(() => {
-    const at = this.fetchedAt();
-    if (!at) {
-      return '';
-    }
-    return new Date(at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-  });
+  /** Vad den hopfällda raden säger: radien, eller uppmaningen att välja plats. */
+  readonly placeLabel = computed(() =>
+    this.place() ? `Inom ${this.radiusKm()} km` : 'Välj plats'
+  );
 
   constructor() {
     this.recipeRequests
@@ -356,6 +341,8 @@ export class AppComponent implements OnInit {
       if (error instanceof LocationError) {
         this.error.set(error.message);
         this.canSearchInstead.set(true);
+        // Sökfältet måste vara framme när det är det enda som återstår.
+        this.placeOpen.set(true);
         return;
       }
       this.error.set('Något gick fel när platsen skulle hämtas.');
@@ -455,6 +442,10 @@ export class AppComponent implements OnInit {
     this.view.set(location.hash === DISCOUNTS_HASH ? 'rabatter' : 'recept');
   }
 
+  togglePlace(): void {
+    this.placeOpen.set(!this.placeOpen());
+  }
+
   openSettings(): void {
     this.settingsOpen.set(true);
   }
@@ -522,6 +513,7 @@ export class AppComponent implements OnInit {
     try {
       const chains = await firstValueFrom(this.offers.chains(place, this.radiusKm()));
       this.place.set(place);
+      this.placeOpen.set(false);
       this.nearbyChains.set(chains);
       this.reconcile(chains);
       this.saveChains(chains);
@@ -616,7 +608,6 @@ export class AppComponent implements OnInit {
       const offers = await firstValueFrom(this.offers.offers(place, this.radiusKm()));
       this.offersHeld.set(offers);
       this.offersKey.set(key);
-      this.fetchedAt.set(new Date().toISOString());
       this.requestRecipes();
     } catch {
       this.recipesLoading.set(false);

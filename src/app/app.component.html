@@ -1,13 +1,11 @@
 <main class="page" *ngIf="view() === 'recept'">
   <header class="top">
     <div class="title">
-      <p class="eyebrow">Laga av veckans rea</p>
       <h1>{{ place()?.name || 'Rabatter nära dig' }}</h1>
       <p class="summary" *ngIf="chains().length">
         {{ selectedOffers().length }}
         {{ selectedOffers().length === 1 ? 'rabatterad vara' : 'rabatterade varor' }} från
         {{ selected().size }} {{ selected().size === 1 ? 'vald kedja' : 'valda kedjor' }}
-        <span *ngIf="fetchedLabel()"> · hämtat {{ fetchedLabel() }}</span>
       </p>
     </div>
 
@@ -78,47 +76,80 @@
     {{ message }}
   </p>
 
-  <section class="card place">
-    <header class="head">
-      <h2 class="card-heading">Plats</h2>
-      <button type="button" class="locate" [disabled]="loading()" (click)="useMyLocation()">
-        Min plats
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 21.2c4.2-4 6.3-7.2 6.3-9.9a6.3 6.3 0 1 0-12.6 0c0 2.7 2.1 5.9 6.3 9.9z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linejoin="round"
-          />
-          <circle cx="12" cy="11" r="2.4" fill="currentColor" />
-        </svg>
-      </button>
-    </header>
+  <section class="setting place">
+    <!-- Platsen och avståndet ställer man in sällan. Hopfällda står de som en
+         rad, och raden säger vad den öppnar. -->
+    <button
+      type="button"
+      class="place-toggle"
+      [attr.aria-expanded]="placeOpen()"
+      aria-controls="app-place-body"
+      (click)="togglePlace()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="pin">
+        <path
+          d="M12 21.2c4.2-4 6.3-7.2 6.3-9.9a6.3 6.3 0 1 0-12.6 0c0 2.7 2.1 5.9 6.3 9.9z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linejoin="round"
+        />
+        <circle cx="12" cy="11" r="2.4" fill="currentColor" />
+      </svg>
+      <span class="place-label">{{ placeLabel() }}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="chevron" [class.open]="placeOpen()">
+        <path
+          d="M6 9.5 12 15.5 18 9.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
 
-    <app-place-search (picked)="choosePlace($event)"></app-place-search>
+    <div id="app-place-body" class="place-body" *ngIf="placeOpen()">
+      <div class="place-row">
+        <app-place-search (picked)="choosePlace($event)"></app-place-search>
 
-    <div class="radius" [style.--fyllt]="radiusFill()">
-      <label class="radius-head" for="app-radius">
-        <span>Avstånd</span>
-        <output for="app-radius">{{ shownRadiusKm() }} km</output>
-      </label>
+        <button type="button" class="locate" [disabled]="loading()" (click)="useMyLocation()">
+          Min plats
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 21.2c4.2-4 6.3-7.2 6.3-9.9a6.3 6.3 0 1 0-12.6 0c0 2.7 2.1 5.9 6.3 9.9z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+            <circle cx="12" cy="11" r="2.4" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
 
-      <input
-        id="app-radius"
-        class="radius-slider"
-        type="range"
-        min="0"
-        [max]="radii.length - 1"
-        step="1"
-        [value]="radiusIndex()"
-        [attr.aria-valuetext]="shownRadiusKm() + ' kilometer från platsen'"
-        (input)="dragRadius($any($event.target).value)"
-        (change)="commitRadius()"
-      />
+      <div class="radius" [style.--fyllt]="radiusFill()">
+        <label class="radius-head" for="app-radius">
+          <span>Avstånd</span>
+          <output for="app-radius">{{ shownRadiusKm() }} km</output>
+        </label>
 
-      <div class="radius-ticks" aria-hidden="true">
-        <span *ngFor="let km of radii" [class.on]="km === shownRadiusKm()">{{ km }}</span>
+        <input
+          id="app-radius"
+          class="radius-slider"
+          type="range"
+          min="0"
+          [max]="radii.length - 1"
+          step="1"
+          [value]="radiusIndex()"
+          [attr.aria-valuetext]="shownRadiusKm() + ' kilometer från platsen'"
+          (input)="dragRadius($any($event.target).value)"
+          (change)="commitRadius()"
+        />
+
+        <div class="radius-ticks" aria-hidden="true">
+          <span *ngFor="let km of radii" [class.on]="km === shownRadiusKm()">{{ km }}</span>
+        </div>
       </div>
     </div>
   </section>
@@ -136,7 +167,6 @@
   <app-cooking-time-filter
     *ngIf="recipes().length"
     [selected]="cookingTimes()"
-    [counts]="cookingTimeCounts()"
     (toggle)="toggleCookingTime($event)"
   ></app-cooking-time-filter>
 
@@ -151,10 +181,6 @@
     >
       Visa rabatter&ngsp;<span class="count">{{ selectedOffers().length }}</span>
     </button>
-    <p class="lead">
-      Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg från minst
-      {{ minVotes }} röster. Klicka för att öppna receptet hos källan.
-    </p>
   </section>
 
   <p class="notice" *ngIf="recipesError() as message" role="status">

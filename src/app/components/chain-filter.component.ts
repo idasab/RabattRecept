@@ -22,7 +22,7 @@ const STEP = 4;
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section class="card">
+    <section class="setting">
       <header class="head">
         <h2 class="card-heading">Kedjor nära dig</h2>
         <!-- Ingen "markera alla": att vilja se varje kedja samtidigt är inget

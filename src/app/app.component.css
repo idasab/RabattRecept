@@ -17,16 +17,6 @@
   padding: 6px 4px 0;
 }
 
-.eyebrow {
-  margin: 0;
-  font-family: var(--font-label);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
 h1 {
   margin: 4px 0 0;
   font-family: var(--font-display);
@@ -127,23 +117,81 @@ h1 {
   gap: 10px;
 }
 
-/* Rubriken och platsknappen på samma rad, som i kedjekortet. */
-.place .head {
+/* Raden som fäller ut platsvalet. Den bär pinnålen och radien, alltså både
+   vad den handlar om och vad som gäller just nu. */
+.place-toggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.place-toggle .pin {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.place-label {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-label);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.place-toggle .chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  transition: transform 150ms ease;
+}
+
+.place-toggle .chevron.open {
+  transform: rotate(180deg);
+}
+
+.place-body {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+/* Sökfältet och platsknappen delar rad: knappen är ett alternativ till att
+   skriva, inte ett steg efter. */
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.place-row app-place-search {
+  display: block;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Fylld i samma tomat som reglaget, så att det syns att den går att trycka.
    En textlänk bredvid en versalrubrik läses lätt som ännu en rubrik. */
 .locate {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  /* Negativ marginal så knappen får sin höjd utan att rubrikraden växer. */
-  margin: -4px 0;
-  padding: 4px 10px;
+  min-height: 38px;
+  padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: linear-gradient(120deg, var(--accent), #e0642f);
@@ -271,7 +319,7 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0 12px;
-  margin: 10px 4px 0;
+  margin: 4px 4px 0;
 }
 
 .recipes-head .card-heading {
@@ -300,20 +348,6 @@ h1 {
 .discounts .count {
   margin-left: 6px;
   font-variant-numeric: tabular-nums;
-  color: var(--text-faint);
-}
-
-/* Fotnoten går under båda kolumnerna, annars trängs den ihop bredvid knappen. */
-.recipes-head .lead {
-  grid-column: 1 / -1;
-}
-
-/* Villkorstexten är en fotnot till rubriken, inte en egen rubrik. Liten och
-   dämpad, så att receptlistan under är det man ser först. */
-.lead {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
   color: var(--text-faint);
 }
 

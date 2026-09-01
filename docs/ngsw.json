@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1788258009937,
+  "timestamp": 1788262845950,
   "index": "/RabattRecept/index.html",
   "assetGroups": [
     {
@@ -15,11 +15,11 @@
         "/RabattRecept/assets/fonts/permanent-marker-latin-400.woff2",
         "/RabattRecept/favicon.ico",
         "/RabattRecept/index.html",
-        "/RabattRecept/main.5fe1b6625b69cd28.js",
+        "/RabattRecept/main.65e25913d2e0dcad.js",
         "/RabattRecept/manifest.webmanifest",
         "/RabattRecept/polyfills.8a3ae097903cfef4.js",
         "/RabattRecept/runtime.1770fc32aa68bb67.js",
-        "/RabattRecept/styles.499f1b7e88c715df.css"
+        "/RabattRecept/styles.b279020215bd5e04.css"
       ],
       "patterns": []
     },
@@ -79,13 +79,13 @@
     "/RabattRecept/assets/icons/icon-512.png": "1cf38e71d4f004e780eb242e7f3eb04de1ad55d5",
     "/RabattRecept/commissioner-latin-400-700.aa924b7c62245c84.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
     "/RabattRecept/favicon.ico": "5fe10c16b7bf810c3259ae856695ba1119eb2733",
-    "/RabattRecept/index.html": "a985c4e1e64eb146c1b4773fbdd3a9839107bfa8",
-    "/RabattRecept/main.5fe1b6625b69cd28.js": "2995ba441fc1bf1e98ce1f9f5236d580c1db8562",
+    "/RabattRecept/index.html": "4eb23cff4d1db5ba55dcbab018d9d469ab018d28",
+    "/RabattRecept/main.65e25913d2e0dcad.js": "cfebf1becaa337b0c1de00a68caed9f0a13a746a",
     "/RabattRecept/manifest.webmanifest": "a0ff8abef3e61975d6118c0ea4135283d7ec4e03",
     "/RabattRecept/permanent-marker-latin-400.09f7b6b7f4b56175.woff2": "5190bac9999e35c0c4f2a005a01f60b330c5615b",
     "/RabattRecept/polyfills.8a3ae097903cfef4.js": "f8ffce8571964634385e658c033f5b1dd6cf6942",
     "/RabattRecept/runtime.1770fc32aa68bb67.js": "f96bae587be1cadcfce61f3c58c55e2674fd0428",
-    "/RabattRecept/styles.499f1b7e88c715df.css": "920a9309d9398954d966cc566efeccb66cd7b7ed"
+    "/RabattRecept/styles.b279020215bd5e04.css": "c41d0eea3a841c76e675d08890df5532c3a9cfbb"
   },
   "navigationUrls": [
     {

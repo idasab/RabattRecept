@@ -47,7 +47,6 @@ import { OfferListComponent } from './offer-list.component';
       </header>
 
       <div class="title">
-        <p class="eyebrow">Veckans rea</p>
         <h1>Rabatter</h1>
         <p class="summary">
           {{ total }} {{ total === 1 ? 'vara' : 'varor' }} från
@@ -188,16 +187,6 @@ import { OfferListComponent } from './offer-list.component';
         padding: 0 4px;
       }
 
-      .eyebrow {
-        margin: 0;
-        font-family: var(--font-label);
-        font-size: 11.5px;
-        font-weight: 700;
-        letter-spacing: 1.3px;
-        text-transform: uppercase;
-        color: var(--accent);
-      }
-
       h1 {
         margin: 4px 0 0;
         font-family: var(--font-display);
@@ -263,12 +252,15 @@ import { OfferListComponent } from './offer-list.component';
         opacity: 0.45;
       }
 
+      /* Kedjenamnet lånar versalstilen men inte dämpningen: här är det
+         rubriken som är själva knappen. */
       .name {
         flex: 1;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        color: var(--text);
       }
 
       .toggle:disabled .name {

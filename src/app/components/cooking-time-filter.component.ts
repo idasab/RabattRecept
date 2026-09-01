@@ -7,26 +7,29 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
  *
  * Filtret arbetar på de redan hämtade recepten, precis som kedjelistan gör på
  * de redan hämtade erbjudandena, så ett kryss syns direkt utan nytt anrop.
+ *
+ * Rutorna bar tidigare var sitt antal. Siffran svarade på en fråga ingen
+ * ställde — man kryssar i den tid man har, inte den ruta som råkar rymma
+ * flest recept — och tre tal till på en sida full av tal gjorde mest brus.
  */
 @Component({
   selector: 'app-cooking-time-filter',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section class="card">
+    <section class="setting">
       <h2 class="card-heading">Tid att laga (min)</h2>
 
       <ul class="bands">
         <li *ngFor="let band of bands">
-          <label class="band" [attr.data-band]="band.id">
+          <label class="band">
             <input
               type="checkbox"
-              [attr.aria-label]="label(band)"
+              [attr.aria-label]="band.label"
               [checked]="selected.has(band.id)"
               (change)="toggle.emit(band.id)"
             />
             <span class="name">{{ band.short }}</span>
-            <span class="count">{{ counts[band.id] ?? 0 }}</span>
           </label>
         </li>
       </ul>
@@ -61,24 +64,13 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
         transition: background-color 130ms ease, border-color 130ms ease;
       }
 
-      /* Varje spann har sin egen färg: grönt är vardagsmat, saffran en vanlig
-         middag, tomat något man börjar med i god tid. Färgen syns bara när
-         spannet är valt, så listan inte blir en tavla av kulörer. */
-      .band[data-band='snabbt'] {
-        --band: var(--herb);
-      }
-
-      .band[data-band='lagom'] {
-        --band: var(--saffron);
-      }
-
-      .band[data-band='långkok'] {
-        --band: var(--accent);
-      }
-
+      /* Ett spann i taget hade sin egen färg — grönt, saffran, tomat — men ett
+         långkok är inte "stopp", och trafikljuset gjorde det minsta filtret
+         till sidans starkaste inslag. Nu bär bara krysset färg. Alla tre är
+         ikryssade från början, och tre färgade ramar i rad drog mer blickar
+         än receptbilderna under dem. */
       .band:has(input:checked) {
-        border-color: var(--band);
-        background: color-mix(in srgb, var(--band) 10%, transparent);
+        background: var(--accent-soft);
       }
 
       /* Samma omritade kryssruta som i kedjelistan och inställningarna. */
@@ -97,8 +89,8 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
       }
 
       input:checked {
-        border-color: var(--band, var(--text));
-        background: var(--band, var(--text)) 50% 50% / 11px 9px no-repeat
+        border-color: var(--accent);
+        background: var(--accent) 50% 50% / 11px 9px no-repeat
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5.2 4.3 8.5 11 1.5' fill='none' stroke='%23f3f2ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       }
 
@@ -114,28 +106,13 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
       input:not(:checked) ~ .name {
         color: var(--text-muted);
       }
-
-      /* Mindre än etiketten, annars läses "30–60 22" som ett enda intervall. */
-      .count {
-        flex: none;
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-        color: var(--text-faint);
-      }
     `,
   ],
 })
 export class CookingTimeFilterComponent {
   @Input({ required: true }) selected: ReadonlySet<CookingTimeBand> = new Set();
-  /** Hur många av de hittade recepten som ryms i varje spann. */
-  @Input() counts: Partial<Record<CookingTimeBand, number>> = {};
 
   @Output() readonly toggle = new EventEmitter<CookingTimeBand>();
 
   readonly bands = COOKING_TIME_BANDS;
-
-  /** Siffran i rutan säger inget utan sitt sammanhang. */
-  label(band: { id: CookingTimeBand; label: string; short: string }): string {
-    return `${band.label}, ${this.counts[band.id] ?? 0} recept`;
-  }
 }
