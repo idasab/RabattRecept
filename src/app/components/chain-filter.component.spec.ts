@@ -16,10 +16,10 @@ function chain(index: number): Chain {
 describe('ChainFilterComponent', () => {
   let fixture: ComponentFixture<ChainFilterComponent>;
 
-  function setChains(count: number, favorites: string[] = []): void {
+  function setChains(count: number, favorites: string[] = [], selected?: string[]): void {
     const chains = Array.from({ length: count }, (_, index) => chain(index));
     fixture.componentInstance.chains = chains;
-    fixture.componentInstance.selected = new Set(chains.map((entry) => entry.id));
+    fixture.componentInstance.selected = new Set(selected ?? favorites);
     fixture.componentInstance.favorites = new Set(favorites);
     fixture.componentInstance.ngOnChanges({
       chains: { currentValue: chains, previousValue: [], firstChange: false, isFirstChange: () => false },
@@ -102,6 +102,36 @@ describe('ChainFilterComponent', () => {
 
     expect(rows().length).toBe(3);
     expect(moreButton()).toBeNull();
+  });
+
+  it('döljer aldrig en ikryssad kedja bakom "Visa fler"', () => {
+    // En kedja som är ikryssad men inte står i listan bidrar med varor till
+    // rabattsidan och receptsökningen utan att gå att se eller kryssa ur.
+    setChains(12, [], ['k7']);
+
+    expect(rows().length).toBe(8);
+    expect(rows()).toContain('Kedja 7');
+    expect(moreButton()?.textContent).toContain('4 kvar');
+  });
+
+  it('fäller ut listan när en dold kedja kryssas i utifrån', () => {
+    setChains(12);
+    expect(rows().length).toBe(4);
+
+    // Så här ser det ut när radien ändras medan en fjärran kedja är vald:
+    // föräldern skickar in en markering som pekar bortom de synliga raderna.
+    fixture.componentInstance.selected = new Set(['k9']);
+    fixture.componentInstance.ngOnChanges({
+      selected: {
+        currentValue: new Set(['k9']),
+        previousValue: new Set(),
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    fixture.detectChanges();
+
+    expect(rows()).toContain('Kedja 9');
   });
 
   it('fäller inte ihop listan när markeringen ändras', () => {

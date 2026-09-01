@@ -14,7 +14,7 @@ const STEP = 4;
  *
  * Listan håller varken markering eller favoriter själv utan får dem utifrån,
  * så att valen överlever en ny hämtning och kan sparas mellan besöken. Att en
- * kedja är dold betyder alltså inte att den är urkryssad: "Rensa" gäller alla
+ * kedja är dold betyder däremot inte att den är urkryssad: "Rensa" gäller alla
  * kedjor, inte bara de synliga.
  */
 @Component({
@@ -239,20 +239,22 @@ export class ChainFilterComponent implements OnChanges {
   private chainKey = '';
 
   /**
-   * Listan börjar på fyra rader, eller på så många favoriter man har om de är
-   * fler — en favorit gömd bakom "Visa fler" vore inte längre en favorit.
+   * Listan börjar på fyra rader, men växer alltid så långt att varje favorit
+   * och varje ikryssad kedja syns. En favorit gömd bakom "Visa fler" vore inte
+   * längre en favorit, och en ikryssad kedja som inte står i listan är värre
+   * än så: den bidrar med varor till rabattsidan och till receptsökningen utan
+   * att man kan se att den är vald, än mindre kryssa ur den.
    *
    * Bara en ny uppsättning kedjor får fälla ihop listan igen, och det avgörs
    * på kedjornas identiteter snarare än på att arrayen är ny. Föräldern
    * sorterar om listan varje gång en stjärna sätts, så en jämförelse på
    * referens skulle fälla ihop en utfälld lista vid varje stjärnklick.
    *
-   * Blir det bara en omsortering växer listan vid behov men krymper aldrig,
-   * och markeringen rör den inte alls: en lista som slog igen så fort man
-   * kryssade i något vore obrukbar.
+   * Blir det bara en omsortering växer listan vid behov men krymper aldrig:
+   * en lista som slog igen så fort man kryssade i något vore obrukbar.
    */
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['chains'] && !changes['favorites']) {
+    if (!changes['chains'] && !changes['favorites'] && !changes['selected']) {
       return;
     }
 
@@ -262,11 +264,10 @@ export class ChainFilterComponent implements OnChanges {
       .join('|');
 
     if (changes['chains'] && key !== this.chainKey) {
-      this.shown = Math.max(STEP, this.favoriteCount);
-    } else {
-      this.shown = Math.max(this.shown, this.favoriteCount);
+      this.shown = STEP;
     }
 
+    this.shown = Math.max(this.shown, this.mustShow);
     this.chainKey = key;
   }
 
@@ -306,7 +307,21 @@ export class ChainFilterComponent implements OnChanges {
     return chain.id;
   }
 
-  private get favoriteCount(): number {
-    return this.chains.filter((chain) => this.favorites.has(chain.id)).length;
+  /**
+   * Hur många rader som minst måste synas för att ingen favorit och ingen
+   * ikryssad kedja ska ligga dold. Favoriterna ligger först och skulle klara
+   * sig på en räkning, men en ikryssad kedja kan stå var som helst i listan,
+   * så det är platsen för den sista av dem som avgör.
+   */
+  private get mustShow(): number {
+    let last = 0;
+
+    this.chains.forEach((chain, index) => {
+      if (this.favorites.has(chain.id) || this.selected.has(chain.id)) {
+        last = index + 1;
+      }
+    });
+
+    return last;
   }
 }
