@@ -201,5 +201,7 @@
 <app-discount-page
   *ngIf="view() === 'rabatter'"
   [groups]="offerGroups()"
+  [hiddenCategories]="hiddenCategories()"
+  (categoryToggled)="toggleOfferCategory($event)"
   (closed)="closeDiscounts()"
 ></app-discount-page>

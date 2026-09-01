@@ -72,6 +72,8 @@ interface StoredSettings {
   onlySwedishMeat: boolean;
   /** Tidsspannen som är ikryssade. */
   cookingTimes: CookingTimeBand[];
+  /** Varugrupper man fällt ihop på rabattsidan. */
+  hiddenCategories: string[];
   place: Place | null;
 }
 
@@ -138,6 +140,14 @@ export class AppComponent implements OnInit {
     new Set(COOKING_TIME_BANDS.map((band) => band.id))
   );
   readonly settingsOpen = signal(false);
+  /**
+   * Varugrupperna man fällt ihop på rabattsidan. De ligger bland de sparade
+   * inställningarna och inte i sidan själv, för att en avdelning är
+   * ointressant på ett bestående sätt: den som inte bryr sig om hushållsvaror
+   * ska slippa fälla ihop dem varje gång appen öppnas. Av samma skäl gäller
+   * de alla kedjor — det är avdelningen man valt bort, inte butikshyllan.
+   */
+  readonly hiddenCategories = signal<ReadonlySet<string>>(new Set());
 
   /**
    * Vilken av appens två sidor som visas. Rabattsidan är en egen vy och inte
@@ -312,6 +322,7 @@ export class AppComponent implements OnInit {
       if (settings.cookingTimes.length) {
         this.cookingTimes.set(new Set(settings.cookingTimes));
       }
+      this.hiddenCategories.set(new Set(settings.hiddenCategories));
     }
 
     // Den sparade kedjelistan visas direkt, så att appen har innehåll redan
@@ -473,6 +484,18 @@ export class AppComponent implements OnInit {
     this.saveSettings();
   }
 
+  /** Fäller ihop eller ut en varugrupp på rabattsidan, för alla kedjor. */
+  toggleOfferCategory(name: string): void {
+    const next = new Set(this.hiddenCategories());
+    if (next.has(name)) {
+      next.delete(name);
+    } else {
+      next.add(name);
+    }
+    this.hiddenCategories.set(next);
+    this.saveSettings();
+  }
+
   chooseSwedishMeat(only: boolean): void {
     this.onlySwedishMeat.set(only);
     this.saveSettings();
@@ -559,6 +582,7 @@ export class AppComponent implements OnInit {
       excludedFoods: [...this.excludedFoods()],
       onlySwedishMeat: this.onlySwedishMeat(),
       cookingTimes: [...this.cookingTimes()],
+      hiddenCategories: [...this.hiddenCategories()],
       place: this.place(),
     };
 
@@ -611,6 +635,7 @@ export class AppComponent implements OnInit {
       excludedFoods: stored.excludedFoods ?? [],
       onlySwedishMeat: stored.onlySwedishMeat ?? false,
       cookingTimes: stored.cookingTimes ?? [],
+      hiddenCategories: stored.hiddenCategories ?? [],
     };
   }
 

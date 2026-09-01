@@ -539,4 +539,30 @@ describe('AppComponent', () => {
     expect(grupper.map((group) => group.chain.name)).toEqual(['Coop']);
     expect(grupper[0].offers.length).toBe(1);
   });
+
+  it('kommer ihåg vilka varugrupper som gömts, till nästa besök', async () => {
+    await create();
+    checkboxes()[0].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    element<HTMLButtonElement>('.discounts')?.click();
+    fixture.detectChanges();
+
+    // Willys enda erbjudande är kycklinglårfilé, alltså avdelningen fågel.
+    const fågel = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        'app-discount-page .category-toggle'
+      )
+    ).find((tab) => tab.textContent?.includes('Kyckling'));
+    expect(fågel?.getAttribute('aria-expanded')).toBe('true');
+
+    fågel?.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.hiddenCategories().has('Kyckling & fågel')).toBeTrue();
+
+    // En avdelning man valt bort ska inte behöva väljas bort igen varje gång.
+    await restart();
+    expect(fixture.componentInstance.hiddenCategories().has('Kyckling & fågel')).toBeTrue();
+  });
 });

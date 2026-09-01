@@ -69,15 +69,15 @@ describe('DiscountPageComponent', () => {
     fixture.detectChanges();
   }
 
-  function openCategory(index: number): void {
+  /** Trycker på en varugrupps flik och speglar utfallet, som appen gör. */
+  function clickCategory(index: number): void {
     categoryTabs()[index].click();
     fixture.detectChanges();
   }
 
-  function openAllCategories(): void {
-    for (let index = 0; index < categoryTabs().length; index += 1) {
-      openCategory(index);
-    }
+  function setHidden(names: string[]): void {
+    fixture.componentInstance.hiddenCategories = new Set(names);
+    fixture.detectChanges();
   }
 
   beforeEach(() => {
@@ -96,54 +96,63 @@ describe('DiscountPageComponent', () => {
     expect(host().querySelector('.summary')?.textContent).toContain('5 varor från 2 kedjor');
   });
 
-  it('visar kedjans varugrupper när den fälls ut, men inga varor än', () => {
+  it('visar kedjans varugrupper utfällda när kedjan öppnas', () => {
     open(0);
 
     // Nötfärs, Bananer och Kaffe — tre varor i tre grupper, i kategoriordning.
     expect(categories()).toEqual(['Fika & godis 1', 'Kött & chark 1', 'Frukt & grönt 1']);
-    expect(rows()).toBe(0);
+    expect(rows()).toBe(3);
     expect(tabs()[0].getAttribute('aria-expanded')).toBe('true');
     expect(tabs()[1].getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('fäller ut den varugrupp man trycker på, och bara den', () => {
+  it('fäller ihop den varugrupp som gömts, och bara den', () => {
     open(0);
-    openCategory(1);
+    setHidden(['Kött & chark']);
 
-    expect(rows()).toBe(1);
-    expect(categoryTabs()[1].getAttribute('aria-expanded')).toBe('true');
-    expect(categoryTabs()[0].getAttribute('aria-expanded')).toBe('false');
+    expect(rows()).toBe(2);
+    expect(categoryTabs()[1].getAttribute('aria-expanded')).toBe('false');
+    expect(categoryTabs()[0].getAttribute('aria-expanded')).toBe('true');
+    // Fliken står kvar med sitt antal, så man hittar tillbaka till den.
+    expect(categories()[1]).toBe('Kött & chark 1');
   });
 
-  it('fäller ihop varugruppen igen vid ett andra tryck', () => {
-    open(0);
-    openCategory(1);
-    openCategory(1);
+  it('säger ifrån till appen vilken varugrupp som trycktes, inte mer', () => {
+    // Sidan äger inte vad som är gömt: valet ska bestå mellan besöken och
+    // gälla alla kedjor, så det hör hemma bland de sparade inställningarna.
+    const tryckta: string[] = [];
+    fixture.componentInstance.categoryToggled.subscribe((name) => tryckta.push(name));
 
-    expect(rows()).toBe(0);
+    open(0);
+    clickCategory(1);
+
+    expect(tryckta).toEqual(['Kött & chark']);
+  });
+
+  it('gömmer varugruppen hos alla kedjor på en gång', () => {
+    // Det är avdelningen man valt bort, inte butikshyllan.
+    open(0);
+    open(1);
+    setHidden(['Kött & chark']);
+
+    const stängda = categoryTabs().filter(
+      (tab) => tab.getAttribute('aria-expanded') === 'false'
+    );
+    expect(stängda.length).toBe(2);
   });
 
   it('visar hela varugruppens rea utan att kapa den', () => {
     // Ingen "visa fler": avdelningarna är det som gör en lång lista läsbar,
     // inte en gräns för hur många rader man får se.
     setGroups([group('Willys', 40)]);
-    openAllCategories();
 
     expect(rows()).toBe(40);
     expect(host().querySelector('.more')).toBeNull();
   });
 
-  it('håller isär samma varugrupp hos olika kedjor', () => {
-    // Båda kedjorna har "Kött & chark". Att öppna den ena får inte öppna den
-    // andra, och id:na får inte krocka.
+  it('ger panelerna egna id även när två kedjor visar samma varugrupp', () => {
     open(0);
     open(1);
-    const köttHosWillys = categoryTabs()[1];
-    köttHosWillys.click();
-    fixture.detectChanges();
-
-    const öppna = categoryTabs().map((tab) => tab.getAttribute('aria-expanded'));
-    expect(öppna.filter((state) => state === 'true').length).toBe(1);
 
     const ids = categoryTabs().map((tab) => tab.getAttribute('aria-controls'));
     expect(new Set(ids).size).toBe(ids.length);
@@ -170,7 +179,6 @@ describe('DiscountPageComponent', () => {
     expect(id).toBe('rabatter-willys');
     expect(host().querySelector('#' + id)).not.toBeNull();
 
-    openCategory(0);
     const categoryId = categoryTabs()[0].getAttribute('aria-controls');
     expect(categoryId).toBe('rabatter-willys-fika-godis');
     expect(host().querySelector('#' + categoryId)).not.toBeNull();
@@ -178,7 +186,6 @@ describe('DiscountPageComponent', () => {
 
   it('upprepar inte kedjenamnet i varje rad när det redan står i fliken', () => {
     open(0);
-    openCategory(0);
 
     expect(host().querySelector('app-offer-list .chain')).toBeNull();
   });
@@ -188,13 +195,6 @@ describe('DiscountPageComponent', () => {
     setGroups([group('Willys', 3)]);
 
     expect(categories().length).toBe(3);
-  });
-
-  it('öppnar varugruppen direkt när kedjan bara har en enda', () => {
-    setGroups([group('Willys', 1)]);
-
-    expect(categories()).toEqual(['Kött & chark 1']);
-    expect(rows()).toBe(1);
   });
 
   it('går inte att öppna när kedjan inte hade något', () => {

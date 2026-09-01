@@ -15,11 +15,14 @@ import { OfferListComponent } from './offer-list.component';
  * riktigt ärende. Ordningen är densamma som i kryssrutelistan, favoriter
  * först och sedan närmast, så att sidan känns igen.
  *
- * En utfälld kedja visar hela sin rea, indelad i varugrupper som i sin tur
- * fälls ut var för sig. Femtio rader i rabattordning blandar kaffe med
- * kotletter, och då är det avdelningarna man saknar — inte en gräns för hur
- * många rader man får se. Med två lager ser man först vilka kedjor som har
- * något, sedan vilka avdelningar kedjan har, och läser bara den man vill åt.
+ * En utfälld kedja visar hela sin rea, indelad i varugrupper. Femtio rader i
+ * rabattordning blandar kaffe med kotletter, och då är det avdelningarna man
+ * saknar — inte en gräns för hur många rader man får se.
+ *
+ * Varugrupperna ligger öppna: man är här för att se rean, inte för att packa
+ * upp den avdelning för avdelning. Den som tycker att en avdelning är
+ * ointressant fäller ihop den, och det valet består och gäller alla kedjor —
+ * det är hushållsvaror man inte bryr sig om, inte hushållsvaror hos Lidl.
  */
 @Component({
   selector: 'app-discount-page',
@@ -98,15 +101,15 @@ import { OfferListComponent } from './offer-list.component';
               <button
                 type="button"
                 class="category-toggle"
-                [attr.aria-expanded]="isCategoryOpen(group, category)"
+                [attr.aria-expanded]="isCategoryOpen(category)"
                 [attr.aria-controls]="categoryPanelId(group, category)"
-                (click)="toggleCategory(group, category)"
+                (click)="categoryToggled.emit(category.name)"
               >
                 <span class="category-name">{{ category.name }}</span>&ngsp;
                 <span class="count">{{ category.offers.length }}</span>
                 <svg
                   class="chevron small"
-                  [class.open]="isCategoryOpen(group, category)"
+                  [class.open]="isCategoryOpen(category)"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
@@ -123,7 +126,7 @@ import { OfferListComponent } from './offer-list.component';
             </h3>
 
             <app-offer-list
-              *ngIf="isCategoryOpen(group, category)"
+              *ngIf="isCategoryOpen(category)"
               [id]="categoryPanelId(group, category)"
               [offers]="category.offers"
               [showChain]="false"
@@ -366,12 +369,14 @@ import { OfferListComponent } from './offer-list.component';
 export class DiscountPageComponent {
   @Input({ required: true }) groups: readonly OfferGroup[] = [];
 
+  /** Varugrupper som fällts ihop. Ägs och sparas av appen, inte av sidan. */
+  @Input() hiddenCategories: ReadonlySet<string> = new Set();
+
   @Output() readonly closed = new EventEmitter<void>();
+  @Output() readonly categoryToggled = new EventEmitter<string>();
 
   /** Vilka kedjor man öppnat eller stängt. Utan post gäller utgångsläget. */
   private readonly opened = new Map<string, boolean>();
-  /** Detsamma för varugrupperna, nycklade på kedja och grupp. */
-  private readonly openedCategories = new Map<string, boolean>();
 
   get total(): number {
     return this.groups.reduce((sum, group) => sum + group.offers.length, 0);
@@ -395,36 +400,21 @@ export class DiscountPageComponent {
     return group.offers.length ? String(group.offers.length) : 'inga rabatter';
   }
 
-  /**
-   * Varugrupperna fungerar som kedjorna: hopfällda så att man ser vilka
-   * avdelningar kedjan har innan man väljer en. Har kedjan bara en enda grupp
-   * ligger den öppen, av samma skäl som en ensam kedja gör det.
-   */
-  isCategoryOpen(group: OfferGroup, category: OfferCategory): boolean {
-    return (
-      this.openedCategories.get(this.categoryKey(group, category)) ??
-      group.categories.length === 1
-    );
-  }
-
-  toggleCategory(group: OfferGroup, category: OfferCategory): void {
-    this.openedCategories.set(
-      this.categoryKey(group, category),
-      !this.isCategoryOpen(group, category)
-    );
+  /** Öppen om man inte fällt ihop just den avdelningen. */
+  isCategoryOpen(category: OfferCategory): boolean {
+    return !this.hiddenCategories.has(category.name);
   }
 
   panelId(group: OfferGroup): string {
     return 'rabatter-' + group.chain.id;
   }
 
+  /**
+   * Kedjan måste ingå i id:t: två kedjor kan visa samma avdelning samtidigt,
+   * och då får panelerna inte heta likadant. Själva öppet-läget delas ändå.
+   */
   categoryPanelId(group: OfferGroup, category: OfferCategory): string {
-    return 'rabatter-' + this.categoryKey(group, category);
-  }
-
-  /** Kedjan måste ingå: samma varugrupp finns hos flera kedjor samtidigt. */
-  private categoryKey(group: OfferGroup, category: OfferCategory): string {
-    return group.chain.id + '-' + slug(category.name);
+    return 'rabatter-' + group.chain.id + '-' + slug(category.name);
   }
 
   trackByChain(_index: number, group: OfferGroup): string {
