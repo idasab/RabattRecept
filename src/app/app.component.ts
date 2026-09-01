@@ -28,6 +28,7 @@ import { GeocodingService } from './core/geocoding.service';
 import { mainIngredientNames } from './core/main-ingredients';
 import { onlySwedishMeat } from './core/origin';
 import { LocationError, LocationService } from './core/location.service';
+import { byCategory } from './core/offer-categories';
 import { filterOffers } from './core/offer-filter';
 import { Chain, Offer, OfferGroup, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
@@ -197,9 +198,10 @@ export class AppComponent implements OnInit {
   });
 
   /**
-   * Rabatterna grupperade på kedja, i samma ordning som kryssrutelistan.
-   * Ikryssade kedjor utan rabatter är med och tomma: att kedjan inte bidrog
-   * med något är ett svar, medan en kedja som bara försvann är en gåta.
+   * Rabatterna grupperade på kedja, i samma ordning som kryssrutelistan, och
+   * inuti varje kedja indelade i varugrupper. Ikryssade kedjor utan rabatter
+   * är med och tomma: att kedjan inte bidrog med något är ett svar, medan en
+   * kedja som bara försvann är en gåta.
    */
   readonly offerGroups = computed<readonly OfferGroup[]>(() => {
     const selected = this.selected();
@@ -216,7 +218,10 @@ export class AppComponent implements OnInit {
 
     return this.chains()
       .filter((chain) => selected.has(chain.id))
-      .map((chain) => ({ chain, offers: byChain.get(chain.id) ?? [] }));
+      .map((chain) => {
+        const offers = byChain.get(chain.id) ?? [];
+        return { chain, offers, categories: byCategory(offers) };
+      });
   });
 
   /** Recepten som visas: de som ryms i de ikryssade tidsspannen. */

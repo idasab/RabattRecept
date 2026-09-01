@@ -1,10 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { Offer, OfferGroup } from '../core/offers.models';
+import { OfferCategory, OfferGroup } from '../core/offers.models';
 import { OfferListComponent } from './offer-list.component';
-
-/** Hur många rabatter som visas per kedja, och hur många "Visa fler" lägger till. */
-const STEP = 15;
 
 /**
  * Rabatterna som recepten bygger på, en egen sida bakom knappen "Visa
@@ -17,9 +14,9 @@ const STEP = 15;
  * riktigt ärende. Ordningen är densamma som i kryssrutelistan, favoriter
  * först och sedan närmast, så att sidan känns igen.
  *
- * En utfälld kedja börjar med femton rader och växer på begäran. En
- * storstadsradie ger flera hundra rabatter, och att rendera alla på en gång
- * gör sidan trög på en telefon.
+ * En utfälld kedja visar hela sin rea, indelad i varugrupper. Femtio rader i
+ * rabattordning blandar kaffe med kotletter, och då är det avdelningarna man
+ * saknar — inte en gräns för hur många rader man får se.
  */
 @Component({
   selector: 'app-discount-page',
@@ -90,11 +87,17 @@ const STEP = 15;
         </h2>
 
         <div class="panel" [id]="panelId(group)" *ngIf="isOpen(group)">
-          <app-offer-list [offers]="visible(group)" [showChain]="false"></app-offer-list>
+          <div
+            class="category"
+            *ngFor="let category of group.categories; trackBy: trackByCategory"
+          >
+            <h3 class="category-head">
+              <span class="category-name">{{ category.name }}</span>&ngsp;
+              <span class="count">{{ category.offers.length }}</span>
+            </h3>
 
-          <button *ngIf="remaining(group)" type="button" class="more" (click)="showMore(group)">
-            Visa fler <span class="remaining">{{ remaining(group) }} kvar</span>
-          </button>
+            <app-offer-list [offers]="category.offers" [showChain]="false"></app-offer-list>
+          </div>
         </div>
       </section>
 
@@ -260,27 +263,35 @@ const STEP = 15;
 
       .panel {
         display: grid;
-        gap: 10px;
+        gap: 14px;
+        margin-bottom: 6px;
       }
 
-      .more {
-        justify-self: start;
+      .category {
+        display: grid;
+        gap: 8px;
+      }
+
+      /* Varugruppen är en avdelningsskylt inne i kedjan, inte en rubrik som
+         konkurrerar med kedjenamnet: linjen bär den, texten är dämpad. */
+      .category-head {
         display: flex;
-        align-items: center;
-        gap: 7px;
-        min-height: 36px;
-        margin-bottom: 4px;
-        padding: 0 4px;
-        border: 0;
-        background: none;
-        color: var(--accent);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
+        align-items: baseline;
+        gap: 8px;
+        margin: 0;
+        padding: 0 4px 6px;
+        border-bottom: 1px solid var(--border);
       }
 
-      .remaining {
-        color: var(--text-faint);
+      .category-name {
+        flex: 1;
+        min-width: 0;
+        font-family: var(--font-label);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+        color: var(--text-muted);
       }
 
       .empty {
@@ -303,8 +314,6 @@ export class DiscountPageComponent {
 
   @Output() readonly closed = new EventEmitter<void>();
 
-  /** Hur många rader som fällts ut per kedja. Utan post gäller STEP. */
-  private readonly shown = new Map<string, number>();
   /** Vilka kedjor man öppnat eller stängt. Utan post gäller utgångsläget. */
   private readonly opened = new Map<string, boolean>();
 
@@ -334,23 +343,11 @@ export class DiscountPageComponent {
     return 'rabatter-' + group.chain.id;
   }
 
-  visible(group: OfferGroup): readonly Offer[] {
-    return group.offers.slice(0, this.limit(group));
-  }
-
-  remaining(group: OfferGroup): number {
-    return Math.max(0, group.offers.length - this.limit(group));
-  }
-
-  showMore(group: OfferGroup): void {
-    this.shown.set(group.chain.id, this.limit(group) + STEP);
-  }
-
   trackByChain(_index: number, group: OfferGroup): string {
     return group.chain.id;
   }
 
-  private limit(group: OfferGroup): number {
-    return this.shown.get(group.chain.id) ?? STEP;
+  trackByCategory(_index: number, category: OfferCategory): string {
+    return category.name;
   }
 }

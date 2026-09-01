@@ -53,12 +53,23 @@ export interface Offer {
   validUntil: string;
 }
 
+/** Rabatterna i en varugrupp, som "Kött & chark" eller "Frukt & grönt". */
+export interface OfferCategory {
+  name: string;
+  offers: readonly Offer[];
+}
+
 /**
  * Rabatterna från en kedja, samlade under kedjan de hör till. Det är så
  * rabattsidan visar dem: man handlar i en butik i taget, inte i ett flöde där
  * kedjorna växlar rad för rad.
+ *
+ * Inuti kedjan är de sedan indelade i varugrupper. En kedja kan ha femtio
+ * rabatter, och en obruten lista i rabattordning blandar kaffe med kotletter.
  */
 export interface OfferGroup {
   chain: Chain;
+  /** Alla kedjans rabatter, för antalet i fliken. */
   offers: readonly Offer[];
+  categories: readonly OfferCategory[];
 }

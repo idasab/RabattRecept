@@ -1,17 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DiscountPageComponent } from './discount-page.component';
+import { byCategory } from '../core/offer-categories';
 import { Chain, Offer, OfferGroup } from '../core/offers.models';
 
 function chain(id: string, name: string): Chain {
   return { id, name, brand: name, color: '#e60219', logo: null, distanceKm: 0.4 };
 }
 
+/** Varunamn som spänner över flera kategorier, så att indelningen syns. */
+const VAROR = ['Nötfärs', 'Bananer', 'Kaffe', 'Laxfilé', 'Ägg', 'Bacon', 'Gurka'];
+
 function offers(chainId: string, chainName: string, count: number): Offer[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `${chainId}-${index}`,
     chainId,
     chainName,
-    heading: `Vara ${index}`,
+    heading: VAROR[index % VAROR.length],
     description: '',
     price: 10,
     prePrice: null,
@@ -20,6 +24,12 @@ function offers(chainId: string, chainName: string, count: number): Offer[] {
     image: null,
     validUntil: '2099-01-01T00:00:00+0000',
   }));
+}
+
+function group(name: string, count: number): OfferGroup {
+  const id = name.toLowerCase();
+  const list = offers(id, name, count);
+  return { chain: chain(id, name), offers: list, categories: byCategory(list) };
 }
 
 describe('DiscountPageComponent', () => {
@@ -46,6 +56,12 @@ describe('DiscountPageComponent', () => {
     return host().querySelectorAll('app-offer-list .offer').length;
   }
 
+  function categories(): string[] {
+    return Array.from(host().querySelectorAll('.category-head')).map(
+      (head) => head.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+    );
+  }
+
   function open(index: number): void {
     tabs()[index].click();
     fixture.detectChanges();
@@ -54,10 +70,7 @@ describe('DiscountPageComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [DiscountPageComponent] });
     fixture = TestBed.createComponent(DiscountPageComponent);
-    setGroups([
-      { chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 3) },
-      { chain: chain('coop', 'Coop'), offers: offers('coop', 'Coop', 2) },
-    ]);
+    setGroups([group('Willys', 3), group('Coop', 2)]);
   });
 
   it('visar kedjorna hopfällda, med antalet i fliken', () => {
@@ -77,12 +90,27 @@ describe('DiscountPageComponent', () => {
     expect(tabs()[1].getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('delar in kedjans rabatter i varugrupper, med antalet i varje', () => {
+    open(0);
+
+    // Nötfärs, Bananer och Kaffe — tre varor i tre grupper, i kategoriordning.
+    expect(categories()).toEqual(['Fika & godis 1', 'Kött & chark 1', 'Frukt & grönt 1']);
+  });
+
+  it('visar hela kedjans rea utan att kapa den', () => {
+    // Ingen "visa fler": avdelningarna är det som gör en lång lista läsbar,
+    // inte en gräns för hur många rader man får se.
+    setGroups([group('Willys', 40)]);
+
+    expect(rows()).toBe(40);
+    expect(host().querySelector('.more')).toBeNull();
+  });
+
   it('låter flera kedjor vara öppna samtidigt, för att kunna jämföras', () => {
     open(0);
     open(1);
 
     expect(rows()).toBe(5);
-    expect(host().querySelectorAll('app-offer-list').length).toBe(2);
   });
 
   it('fäller ihop igen vid ett andra tryck', () => {
@@ -108,47 +136,16 @@ describe('DiscountPageComponent', () => {
 
   it('ligger öppen från början när bara en kedja är ikryssad', () => {
     // Då finns inget att välja mellan, och fliken vore bara ett klick i vägen.
-    setGroups([{ chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 3) }]);
+    setGroups([group('Willys', 3)]);
 
     expect(rows()).toBe(3);
   });
 
   it('går inte att öppna när kedjan inte hade något', () => {
-    setGroups([{ chain: chain('lidl', 'Lidl'), offers: [] }]);
+    setGroups([group('Lidl', 0)]);
 
     expect(labels()).toEqual(['Lidl inga rabatter']);
     expect(tabs()[0].disabled).toBeTrue();
-  });
-
-  it('visar femton rader per kedja och fäller ut resten på begäran', () => {
-    // En storstadsradie ger flera hundra rabatter. Alla på en gång gör sidan
-    // trög på en telefon, och ingen läser trehundra rader i ett svep.
-    setGroups([{ chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 40) }]);
-    expect(rows()).toBe(15);
-
-    const more = host().querySelector<HTMLButtonElement>('.more');
-    expect(more?.textContent).toContain('25 kvar');
-
-    more?.click();
-    fixture.detectChanges();
-    expect(rows()).toBe(30);
-  });
-
-  it('utvidgar en kedja i taget', () => {
-    setGroups([
-      { chain: chain('willys', 'Willys'), offers: offers('willys', 'Willys', 40) },
-      { chain: chain('coop', 'Coop'), offers: offers('coop', 'Coop', 40) },
-    ]);
-    open(0);
-    open(1);
-
-    host().querySelectorAll<HTMLButtonElement>('.more')[0].click();
-    fixture.detectChanges();
-
-    const perGroup = Array.from(host().querySelectorAll('app-offer-list')).map(
-      (list) => list.querySelectorAll('.offer').length
-    );
-    expect(perGroup).toEqual([30, 15]);
   });
 
   it('visar vägen tillbaka till recepten', () => {
