@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { OfferCategory, OfferGroup } from '../core/offers.models';
+import { normalizeText } from '../core/text';
 import { OfferListComponent } from './offer-list.component';
 
 /**
@@ -14,9 +15,11 @@ import { OfferListComponent } from './offer-list.component';
  * riktigt ärende. Ordningen är densamma som i kryssrutelistan, favoriter
  * först och sedan närmast, så att sidan känns igen.
  *
- * En utfälld kedja visar hela sin rea, indelad i varugrupper. Femtio rader i
- * rabattordning blandar kaffe med kotletter, och då är det avdelningarna man
- * saknar — inte en gräns för hur många rader man får se.
+ * En utfälld kedja visar hela sin rea, indelad i varugrupper som i sin tur
+ * fälls ut var för sig. Femtio rader i rabattordning blandar kaffe med
+ * kotletter, och då är det avdelningarna man saknar — inte en gräns för hur
+ * många rader man får se. Med två lager ser man först vilka kedjor som har
+ * något, sedan vilka avdelningar kedjan har, och läser bara den man vill åt.
  */
 @Component({
   selector: 'app-discount-page',
@@ -92,11 +95,39 @@ import { OfferListComponent } from './offer-list.component';
             *ngFor="let category of group.categories; trackBy: trackByCategory"
           >
             <h3 class="category-head">
-              <span class="category-name">{{ category.name }}</span>&ngsp;
-              <span class="count">{{ category.offers.length }}</span>
+              <button
+                type="button"
+                class="category-toggle"
+                [attr.aria-expanded]="isCategoryOpen(group, category)"
+                [attr.aria-controls]="categoryPanelId(group, category)"
+                (click)="toggleCategory(group, category)"
+              >
+                <span class="category-name">{{ category.name }}</span>&ngsp;
+                <span class="count">{{ category.offers.length }}</span>
+                <svg
+                  class="chevron small"
+                  [class.open]="isCategoryOpen(group, category)"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M6 9.5 12 15.5 18 9.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.1"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
             </h3>
 
-            <app-offer-list [offers]="category.offers" [showChain]="false"></app-offer-list>
+            <app-offer-list
+              *ngIf="isCategoryOpen(group, category)"
+              [id]="categoryPanelId(group, category)"
+              [offers]="category.offers"
+              [showChain]="false"
+            ></app-offer-list>
           </div>
         </div>
       </section>
@@ -272,26 +303,49 @@ import { OfferListComponent } from './offer-list.component';
         gap: 8px;
       }
 
-      /* Varugruppen är en avdelningsskylt inne i kedjan, inte en rubrik som
-         konkurrerar med kedjenamnet: linjen bär den, texten är dämpad. */
       .category-head {
-        display: flex;
-        align-items: baseline;
-        gap: 8px;
         margin: 0;
-        padding: 0 4px 6px;
+      }
+
+      /* Varugruppen är en avdelningsskylt inne i kedjan, inte en rubrik som
+         konkurrerar med kedjenamnet: linjen bär den, texten är dämpad. Den är
+         en flik precis som kedjan, men får inte se ut som ett eget kort —
+         nivåskillnaden är hela poängen med två lager. */
+      .category-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 40px;
+        padding: 0 4px;
+        border: 0;
         border-bottom: 1px solid var(--border);
+        border-radius: 0;
+        background: none;
+        text-align: left;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .category-name {
         flex: 1;
         min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-family: var(--font-label);
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 1.1px;
         text-transform: uppercase;
         color: var(--text-muted);
+      }
+
+      .chevron.small {
+        width: 14px;
+        height: 14px;
+        margin-right: 0;
+        color: var(--text-faint);
       }
 
       .empty {
@@ -316,6 +370,8 @@ export class DiscountPageComponent {
 
   /** Vilka kedjor man öppnat eller stängt. Utan post gäller utgångsläget. */
   private readonly opened = new Map<string, boolean>();
+  /** Detsamma för varugrupperna, nycklade på kedja och grupp. */
+  private readonly openedCategories = new Map<string, boolean>();
 
   get total(): number {
     return this.groups.reduce((sum, group) => sum + group.offers.length, 0);
@@ -339,8 +395,36 @@ export class DiscountPageComponent {
     return group.offers.length ? String(group.offers.length) : 'inga rabatter';
   }
 
+  /**
+   * Varugrupperna fungerar som kedjorna: hopfällda så att man ser vilka
+   * avdelningar kedjan har innan man väljer en. Har kedjan bara en enda grupp
+   * ligger den öppen, av samma skäl som en ensam kedja gör det.
+   */
+  isCategoryOpen(group: OfferGroup, category: OfferCategory): boolean {
+    return (
+      this.openedCategories.get(this.categoryKey(group, category)) ??
+      group.categories.length === 1
+    );
+  }
+
+  toggleCategory(group: OfferGroup, category: OfferCategory): void {
+    this.openedCategories.set(
+      this.categoryKey(group, category),
+      !this.isCategoryOpen(group, category)
+    );
+  }
+
   panelId(group: OfferGroup): string {
     return 'rabatter-' + group.chain.id;
+  }
+
+  categoryPanelId(group: OfferGroup, category: OfferCategory): string {
+    return 'rabatter-' + this.categoryKey(group, category);
+  }
+
+  /** Kedjan måste ingå: samma varugrupp finns hos flera kedjor samtidigt. */
+  private categoryKey(group: OfferGroup, category: OfferCategory): string {
+    return group.chain.id + '-' + slug(category.name);
   }
 
   trackByChain(_index: number, group: OfferGroup): string {
@@ -350,4 +434,9 @@ export class DiscountPageComponent {
   trackByCategory(_index: number, category: OfferCategory): string {
     return category.name;
   }
+}
+
+/** Gör kategorinamnet till en bit som duger i ett id-attribut. */
+function slug(name: string): string {
+  return normalizeText(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }

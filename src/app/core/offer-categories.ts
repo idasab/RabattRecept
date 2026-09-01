@@ -9,8 +9,15 @@ interface Category {
   except?: string[];
 }
 
-/** Varor som inte gick att placera. Står alltid sist. */
-export const OTHER = 'Övrigt';
+/**
+ * Varor som inte gick att placera. Står alltid sist.
+ *
+ * Det som blir kvar är nästan alltid rubriker som bara är ett varumärke —
+ * "TUPLA MAXI" är en chokladbit, men det står ingenstans. "Ospecificerat"
+ * säger vad som faktiskt hänt: varan har ingen angiven grupp, inte att den
+ * skulle vara en udda restpost.
+ */
+export const OTHER = 'Ospecificerat';
 
 /**
  * Varugrupperna rabattlistan delas in i.
@@ -371,7 +378,7 @@ const PREPARED = CATEGORIES.map((entry) => ({
   except: (entry.except ?? []).map(normalizeText),
 }));
 
-/** Ordningen kategorierna visas i. Övrigt sist, som skräplådan den är. */
+/** Ordningen kategorierna visas i. Det ospecificerade sist, där det hör hemma. */
 export const CATEGORY_ORDER: readonly string[] = [
   ...CATEGORIES.map((entry) => entry.name),
   OTHER,

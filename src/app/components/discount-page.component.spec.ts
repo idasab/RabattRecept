@@ -48,23 +48,36 @@ describe('DiscountPageComponent', () => {
     return Array.from(host().querySelectorAll<HTMLButtonElement>('.toggle'));
   }
 
+  function categoryTabs(): HTMLButtonElement[] {
+    return Array.from(host().querySelectorAll<HTMLButtonElement>('.category-toggle'));
+  }
+
   function labels(): string[] {
     return tabs().map((tab) => tab.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+  }
+
+  function categories(): string[] {
+    return categoryTabs().map((tab) => tab.textContent?.replace(/\s+/g, ' ').trim() ?? '');
   }
 
   function rows(): number {
     return host().querySelectorAll('app-offer-list .offer').length;
   }
 
-  function categories(): string[] {
-    return Array.from(host().querySelectorAll('.category-head')).map(
-      (head) => head.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-    );
-  }
-
   function open(index: number): void {
     tabs()[index].click();
     fixture.detectChanges();
+  }
+
+  function openCategory(index: number): void {
+    categoryTabs()[index].click();
+    fixture.detectChanges();
+  }
+
+  function openAllCategories(): void {
+    for (let index = 0; index < categoryTabs().length; index += 1) {
+      openCategory(index);
+    }
   }
 
   beforeEach(() => {
@@ -75,6 +88,7 @@ describe('DiscountPageComponent', () => {
 
   it('visar kedjorna hopfällda, med antalet i fliken', () => {
     expect(labels()).toEqual(['Willys 3', 'Coop 2']);
+    expect(categories()).toEqual([]);
     expect(rows()).toBe(0);
   });
 
@@ -82,42 +96,71 @@ describe('DiscountPageComponent', () => {
     expect(host().querySelector('.summary')?.textContent).toContain('5 varor från 2 kedjor');
   });
 
-  it('fäller ut den kedja man trycker på, och bara den', () => {
-    open(0);
-
-    expect(rows()).toBe(3);
-    expect(tabs()[0].getAttribute('aria-expanded')).toBe('true');
-    expect(tabs()[1].getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('delar in kedjans rabatter i varugrupper, med antalet i varje', () => {
+  it('visar kedjans varugrupper när den fälls ut, men inga varor än', () => {
     open(0);
 
     // Nötfärs, Bananer och Kaffe — tre varor i tre grupper, i kategoriordning.
     expect(categories()).toEqual(['Fika & godis 1', 'Kött & chark 1', 'Frukt & grönt 1']);
+    expect(rows()).toBe(0);
+    expect(tabs()[0].getAttribute('aria-expanded')).toBe('true');
+    expect(tabs()[1].getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('visar hela kedjans rea utan att kapa den', () => {
+  it('fäller ut den varugrupp man trycker på, och bara den', () => {
+    open(0);
+    openCategory(1);
+
+    expect(rows()).toBe(1);
+    expect(categoryTabs()[1].getAttribute('aria-expanded')).toBe('true');
+    expect(categoryTabs()[0].getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('fäller ihop varugruppen igen vid ett andra tryck', () => {
+    open(0);
+    openCategory(1);
+    openCategory(1);
+
+    expect(rows()).toBe(0);
+  });
+
+  it('visar hela varugruppens rea utan att kapa den', () => {
     // Ingen "visa fler": avdelningarna är det som gör en lång lista läsbar,
     // inte en gräns för hur många rader man får se.
     setGroups([group('Willys', 40)]);
+    openAllCategories();
 
     expect(rows()).toBe(40);
     expect(host().querySelector('.more')).toBeNull();
+  });
+
+  it('håller isär samma varugrupp hos olika kedjor', () => {
+    // Båda kedjorna har "Kött & chark". Att öppna den ena får inte öppna den
+    // andra, och id:na får inte krocka.
+    open(0);
+    open(1);
+    const köttHosWillys = categoryTabs()[1];
+    köttHosWillys.click();
+    fixture.detectChanges();
+
+    const öppna = categoryTabs().map((tab) => tab.getAttribute('aria-expanded'));
+    expect(öppna.filter((state) => state === 'true').length).toBe(1);
+
+    const ids = categoryTabs().map((tab) => tab.getAttribute('aria-controls'));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('låter flera kedjor vara öppna samtidigt, för att kunna jämföras', () => {
     open(0);
     open(1);
 
-    expect(rows()).toBe(5);
+    expect(host().querySelectorAll('.panel').length).toBe(2);
   });
 
-  it('fäller ihop igen vid ett andra tryck', () => {
+  it('fäller ihop kedjan igen vid ett andra tryck', () => {
     open(0);
     open(0);
 
-    expect(rows()).toBe(0);
+    expect(categories()).toEqual([]);
   });
 
   it('pekar ut panelen den styr, så att den kan följas av en skärmläsare', () => {
@@ -126,10 +169,16 @@ describe('DiscountPageComponent', () => {
     const id = tabs()[0].getAttribute('aria-controls');
     expect(id).toBe('rabatter-willys');
     expect(host().querySelector('#' + id)).not.toBeNull();
+
+    openCategory(0);
+    const categoryId = categoryTabs()[0].getAttribute('aria-controls');
+    expect(categoryId).toBe('rabatter-willys-fika-godis');
+    expect(host().querySelector('#' + categoryId)).not.toBeNull();
   });
 
   it('upprepar inte kedjenamnet i varje rad när det redan står i fliken', () => {
     open(0);
+    openCategory(0);
 
     expect(host().querySelector('app-offer-list .chain')).toBeNull();
   });
@@ -138,7 +187,14 @@ describe('DiscountPageComponent', () => {
     // Då finns inget att välja mellan, och fliken vore bara ett klick i vägen.
     setGroups([group('Willys', 3)]);
 
-    expect(rows()).toBe(3);
+    expect(categories().length).toBe(3);
+  });
+
+  it('öppnar varugruppen direkt när kedjan bara har en enda', () => {
+    setGroups([group('Willys', 1)]);
+
+    expect(categories()).toEqual(['Kött & chark 1']);
+    expect(rows()).toBe(1);
   });
 
   it('går inte att öppna när kedjan inte hade något', () => {

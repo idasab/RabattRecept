@@ -57,7 +57,7 @@ describe('categoryFor', () => {
     expect(categoryFor('ZOÉGAS', 'Bryggkaffe, 450g')).toBe('Fika & godis');
   });
 
-  it('lägger det oplacerbara i Övrigt, sist av allt', () => {
+  it('lägger det oplacerbara i Ospecificerat, sist av allt', () => {
     expect(categoryFor('Krysantemum')).toBe(OTHER);
     expect(CATEGORY_ORDER[CATEGORY_ORDER.length - 1]).toBe(OTHER);
   });
