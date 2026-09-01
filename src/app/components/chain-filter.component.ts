@@ -8,9 +8,9 @@ const STEP = 4;
 
 /**
  * Kedjorna med butik i närheten, som en lista att kryssa i.
- * Favoriterna ligger överst, resten närmast först. Listan börjar kort och
- * växer fyra rader i taget — i en storstad finns ett dussin kedjor, och de
- * flesta handlar i ett par av dem.
+ * De ikryssade ligger överst, sedan favoriterna, resten närmast först.
+ * Listan börjar kort och växer fyra rader i taget — i en storstad finns ett
+ * dussin kedjor, och de flesta handlar i ett par av dem.
  *
  * Listan håller varken markering eller favoriter själv utan får dem utifrån,
  * så att valen överlever en ny hämtning och kan sparas mellan besöken. Att en
@@ -309,9 +309,12 @@ export class ChainFilterComponent implements OnChanges {
 
   /**
    * Hur många rader som minst måste synas för att ingen favorit och ingen
-   * ikryssad kedja ska ligga dold. Favoriterna ligger först och skulle klara
-   * sig på en räkning, men en ikryssad kedja kan stå var som helst i listan,
-   * så det är platsen för den sista av dem som avgör.
+   * ikryssad kedja ska ligga dold.
+   *
+   * Räknar på platsen för den sista av dem och inte på hur många de är, så
+   * att listan håller sitt löfte oavsett i vilken ordning den kommer in.
+   * Föräldern samlar visserligen de ikryssade överst, men den ordningen är
+   * dess ensak och den här komponenten ska inte gå omkull om den ändras.
    */
   private get mustShow(): number {
     let last = 0;

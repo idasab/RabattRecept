@@ -241,6 +241,18 @@ describe('AppComponent', () => {
     expect(checkboxes().map((box) => box.checked)).toEqual([true, false]);
   });
 
+  it('samlar de ikryssade överst, så att listan kan hållas kort', async () => {
+    await create();
+    expect(chainNames()).toEqual(['Willys', 'Coop']);
+
+    // Kryssa i Coop, som ligger längst bort.
+    checkboxes()[1].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(chainNames()).toEqual(['Coop', 'Willys']);
+  });
+
   it('lyfter favoriten överst och kryssar i den', async () => {
     await create();
     expect(chainNames()).toEqual(['Willys', 'Coop']);
@@ -290,11 +302,14 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     expect(fixture.componentInstance.favorites().has('coop')).toBeTrue();
 
+    // Stjärnan sitter nu på Coop, som lyfts till toppen av sitt kryss.
     stars()[0].click();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.favorites().size).toBe(0);
-    expect(chainNames()).toEqual(['Willys', 'Coop']);
+    // Att ta bort stjärnan kryssar inte ur kedjan, så den ligger kvar överst.
+    expect(fixture.componentInstance.selected().has('coop')).toBeTrue();
+    expect(chainNames()).toEqual(['Coop', 'Willys']);
   });
 
   it('utesluter varor man valt bort ur underlaget för recepten', async () => {

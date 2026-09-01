@@ -179,14 +179,23 @@ export class AppComponent implements OnInit {
   );
 
   /**
-   * Favoriterna först. I övrigt behålls källans ordning, som redan är
-   * närmast först — sorteringen är stabil, så oavgjort lämnar raderna i fred.
+   * De ikryssade först, favoriterna näst. I övrigt behålls källans ordning,
+   * som redan är närmast först — sorteringen är stabil, så oavgjort lämnar
+   * raderna i fred.
+   *
+   * Att samla de ikryssade överst håller listan kort. Annars måste den fällas
+   * ut ända ned till den kedja som ligger längst bort av dem man valt, bara
+   * för att den inte får ligga dold, och då visas en rad ointressanta kedjor
+   * på vägen dit. Priset är att en rad hoppar uppåt när man kryssar i den.
    */
   readonly chains = computed<readonly Chain[]>(() => {
+    const selected = this.selected();
     const favorites = this.favorites();
 
     return [...this.nearbyChains()].sort(
-      (a, b) => Number(!favorites.has(a.id)) - Number(!favorites.has(b.id))
+      (a, b) =>
+        Number(!selected.has(a.id)) - Number(!selected.has(b.id)) ||
+        Number(!favorites.has(a.id)) - Number(!favorites.has(b.id))
     );
   });
 
