@@ -52,3 +52,13 @@ export interface Offer {
   /** Sista giltighetsdag som ISO-sträng. */
   validUntil: string;
 }
+
+/**
+ * Rabatterna från en kedja, samlade under kedjan de hör till. Det är så
+ * rabattsidan visar dem: man handlar i en butik i taget, inte i ett flöde där
+ * kedjorna växlar rad för rad.
+ */
+export interface OfferGroup {
+  chain: Chain;
+  offers: readonly Offer[];
+}

@@ -1,4 +1,4 @@
-<main class="page">
+<main class="page" *ngIf="view() === 'recept'">
   <header class="top">
     <div class="title">
       <p class="eyebrow">Laga av veckans rea</p>
@@ -142,6 +142,15 @@
 
   <section class="recipes-head" *ngIf="chains().length">
     <h2 class="card-heading">Recept på det som är billigt</h2>
+    <!-- Recepten är det appen är till för, men rean bakom dem ska gå att se. -->
+    <button
+      *ngIf="selectedOffers().length"
+      type="button"
+      class="discounts"
+      (click)="openDiscounts()"
+    >
+      Visa rabatter&ngsp;<span class="count">{{ selectedOffers().length }}</span>
+    </button>
     <p class="lead">
       Rätter vars huvudråvara är på rea, med minst {{ minRating }} i betyg från minst
       {{ minVotes }} röster. Klicka för att öppna receptet hos källan.
@@ -188,3 +197,9 @@
     Priser och giltighet kan skilja sig åt mellan butiker i samma kedja.
   </footer>
 </main>
+
+<app-discount-page
+  *ngIf="view() === 'rabatter'"
+  [groups]="offerGroups()"
+  (closed)="closeDiscounts()"
+></app-discount-page>

@@ -21,7 +21,7 @@ import { Offer } from '../core/offers.models';
         <span *ngIf="!offer.image" class="thumb thumb-empty" aria-hidden="true"></span>
 
         <div class="body">
-          <p class="chain">
+          <p class="chain" *ngIf="showChain">
             <span class="dot" aria-hidden="true" [style.background]="colors[offer.chainId]"></span>
             {{ offer.chainName }}
           </p>
@@ -156,6 +156,11 @@ export class OfferListComponent {
   @Input({ required: true }) offers: readonly Offer[] = [];
   /** Kedjefärg per kedje-id, så att pricken matchar kryssrutelistan. */
   @Input() colors: Record<string, string> = {};
+  /**
+   * Om kedjenamnet ska stå på varje rad. Falskt när listan redan står under en
+   * kedjerubrik: då vore namnet upprepat i varje rad bara brus.
+   */
+  @Input() showChain = true;
 
   price(offer: Offer): string {
     return formatPrice(offer.price, offer.currency);

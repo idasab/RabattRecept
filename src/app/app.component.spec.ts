@@ -171,7 +171,12 @@ describe('AppComponent', () => {
     location = TestBed.inject(LocationService) as unknown as StubLocationService;
   });
 
-  afterEach(() => localStorage.clear());
+  afterEach(() => {
+    localStorage.clear();
+    // Rabattsidan lägger '#rabatter' på adressen. Utan städning ärver nästa
+    // test den vyn och startar på fel sida.
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  });
 
   it('visar platsen med kedjorna listade men ingen ikryssad', async () => {
     await create();
@@ -472,5 +477,66 @@ describe('AppComponent', () => {
 
     expect(text()).toContain('Appen fick inte tillgång till din plats.');
     expect(fixture.componentInstance.canSearchInstead()).toBeTrue();
+  });
+
+  it('visar vägen till rabatterna först när något är ikryssat', async () => {
+    await create();
+    expect(element('.discounts')).toBeNull();
+
+    checkboxes()[0].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element('.discounts')?.textContent).toContain('Visa rabatter');
+  });
+
+  it('byter till rabattsidan och grupperar dem på kedja', async () => {
+    await create();
+    checkboxes()[0].click();
+    checkboxes()[1].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    element<HTMLButtonElement>('.discounts')?.click();
+    fixture.detectChanges();
+
+    // Recepten är borta, rabatterna framme — det är en sida, inte ett utfäll.
+    expect(element('app-chain-filter')).toBeNull();
+    expect(
+      Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll(
+          'app-discount-page .group-head .card-heading'
+        )
+      ).map((heading) => heading.textContent?.trim())
+    ).toEqual(['Willys', 'Coop']);
+  });
+
+  it('lägger rabattsidan i historiken, så att bakåt tar en till recepten', async () => {
+    await create();
+    checkboxes()[0].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    element<HTMLButtonElement>('.discounts')?.click();
+    expect(window.location.hash).toBe('#rabatter');
+
+    // Bakåtgesten på telefonen ger popstate, precis som knappen i sidan.
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    fixture.componentInstance.syncView();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.view()).toBe('recept');
+    expect(element('app-chain-filter')).not.toBeNull();
+  });
+
+  it('tar bara med ikryssade kedjor bland rabatterna', async () => {
+    await create();
+    checkboxes()[1].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const grupper = fixture.componentInstance.offerGroups();
+    expect(grupper.map((group) => group.chain.name)).toEqual(['Coop']);
+    expect(grupper[0].offers.length).toBe(1);
   });
 });

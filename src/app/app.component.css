@@ -267,11 +267,45 @@ h1 {
 }
 
 .recipes-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 12px;
   margin: 10px 4px 0;
 }
 
 .recipes-head .card-heading {
   font-size: 12px;
+}
+
+/* Vägen till rabattsidan ligger på rubrikraden och inte som ett eget block:
+   den är en genväg vid sidan av recepten, inte ett steg på vägen till dem. */
+.discounts {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--accent);
+  font-family: var(--font-label);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.discounts .count {
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+/* Fotnoten går under båda kolumnerna, annars trängs den ihop bredvid knappen. */
+.recipes-head .lead {
+  grid-column: 1 / -1;
 }
 
 /* Villkorstexten är en fotnot till rubriken, inte en egen rubrik. Liten och

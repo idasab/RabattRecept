@@ -544,6 +544,12 @@ Appen fungerar bra på Pages i övrigt: den har ingen router och behöver därf�
 ingen 404-omskrivning, och Pages serverar över HTTPS, vilket både geolocation
 och service workern kräver.
 
+Rabattsidan är just därför en vy och inte en rutt. Den byter adress till
+`#rabatter` via `history.pushState`, så att telefonens bakåtgest tar en tillbaka
+till recepten i stället för att lämna appen — men fragmentet skickas aldrig till
+servern, så en omladdning på rabattsidan hämtar samma `index.html` som vanligt.
+En riktig sökväg hade krävt både `@angular/router` och en 404-omskrivning.
+
 Det finns inget CI-workflow. Ett sådant provades i systerprojektet
 WeatherClothing men gick inte att få grönt på GitHub-runnern, och ett trasigt
 workflow som körs vid varje push ger bara röda kryss utan nytta.

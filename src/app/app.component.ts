@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   ElementRef,
+  HostListener,
   OnInit,
   ViewChild,
   computed,
@@ -11,6 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, firstValueFrom, of, switchMap } from 'rxjs';
 import { ChainFilterComponent } from './components/chain-filter.component';
+import { DiscountPageComponent } from './components/discount-page.component';
 import { CookingTimeFilterComponent } from './components/cooking-time-filter.component';
 import { SettingsMenuComponent } from './components/settings-menu.component';
 import { PlaceSearchComponent } from './components/place-search.component';
@@ -27,7 +29,7 @@ import { mainIngredientNames } from './core/main-ingredients';
 import { onlySwedishMeat } from './core/origin';
 import { LocationError, LocationService } from './core/location.service';
 import { filterOffers } from './core/offer-filter';
-import { Chain, Offer, Place } from './core/offers.models';
+import { Chain, Offer, OfferGroup, Place } from './core/offers.models';
 import { OffersService } from './core/offers.service';
 import { Recipe } from './core/recipes.models';
 import { MIN_RATING, MIN_VOTES, RecipesService } from './core/recipes.service';
@@ -40,6 +42,13 @@ import { MIN_RATING, MIN_VOTES, RecipesService } from './core/recipes.service';
 const SETTINGS_KEY = 'rabatt-recept.settings.v2';
 /** Kedjelistan sparas så att appen har innehåll direkt när den öppnas. */
 const CHAINS_KEY = 'rabatt-recept.chains.v1';
+
+/**
+ * Adressen rabattsidan lägger på i historiken. En fragmentdel och ingen egen
+ * sökväg: GitHub Pages serverar bara index.html, så en riktig sökväg hade gett
+ * 404 om man laddade om eller öppnade appen från hemskärmen där den stod.
+ */
+const DISCOUNTS_HASH = '#rabatter';
 
 /** Avstånden man kan välja mellan, i kilometer. */
 const RADII = [2, 5, 10, 25];
@@ -72,6 +81,7 @@ interface StoredSettings {
     CommonModule,
     ChainFilterComponent,
     CookingTimeFilterComponent,
+    DiscountPageComponent,
     PlaceSearchComponent,
     RecipeListComponent,
     SettingsMenuComponent,
@@ -128,6 +138,13 @@ export class AppComponent implements OnInit {
   );
   readonly settingsOpen = signal(false);
 
+  /**
+   * Vilken av appens två sidor som visas. Rabattsidan är en egen vy och inte
+   * ett utfällt kort, för listan är lång och recepten är det man normalt är
+   * här för.
+   */
+  readonly view = signal<'recept' | 'rabatter'>('recept');
+
   @ViewChild('settingsButton') private settingsButton?: ElementRef<HTMLButtonElement>;
 
   /** Alla recept sökningen gav, före tidsfiltret. */
@@ -177,6 +194,29 @@ export class AppComponent implements OnInit {
 
     const allowed = withoutExcluded(fromChains, this.excludedFoods());
     return this.onlySwedishMeat() ? onlySwedishMeat(allowed) : allowed;
+  });
+
+  /**
+   * Rabatterna grupperade på kedja, i samma ordning som kryssrutelistan.
+   * Ikryssade kedjor utan rabatter är med och tomma: att kedjan inte bidrog
+   * med något är ett svar, medan en kedja som bara försvann är en gåta.
+   */
+  readonly offerGroups = computed<readonly OfferGroup[]>(() => {
+    const selected = this.selected();
+    const byChain = new Map<string, Offer[]>();
+
+    for (const offer of this.selectedOffers()) {
+      const held = byChain.get(offer.chainId);
+      if (held) {
+        held.push(offer);
+      } else {
+        byChain.set(offer.chainId, [offer]);
+      }
+    }
+
+    return this.chains()
+      .filter((chain) => selected.has(chain.id))
+      .map((chain) => ({ chain, offers: byChain.get(chain.id) ?? [] }));
   });
 
   /** Recepten som visas: de som ryms i de ikryssade tidsspannen. */
@@ -255,6 +295,8 @@ export class AppComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.syncView();
+
     const settings = this.readSettings();
     if (settings) {
       this.radiusKm.set(settings.radiusKm);
@@ -372,6 +414,29 @@ export class AppComponent implements OnInit {
 
     this.favorites.set(favorites);
     this.saveSettings();
+  }
+
+  /**
+   * Rabattsidan läggs på historiken, så att telefonens bakåtgest tar en
+   * tillbaka till recepten i stället för att lämna appen.
+   */
+  openDiscounts(): void {
+    this.view.set('rabatter');
+    history.pushState({ vy: 'rabatter' }, '', DISCOUNTS_HASH);
+  }
+
+  /** Knappen i sidan gör samma sak som bakåtgesten: ett steg bakåt. */
+  closeDiscounts(): void {
+    if (location.hash === DISCOUNTS_HASH) {
+      history.back();
+      return;
+    }
+    this.view.set('recept');
+  }
+
+  @HostListener('window:popstate')
+  syncView(): void {
+    this.view.set(location.hash === DISCOUNTS_HASH ? 'rabatter' : 'recept');
   }
 
   openSettings(): void {
