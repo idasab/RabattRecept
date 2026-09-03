@@ -26,7 +26,6 @@ const RATING = new Intl.NumberFormat('sv-SE', {
  */
 @Component({
   selector: 'app-recipe-list',
-  standalone: true,
   imports: [CommonModule],
   template: `
     <ul class="recipes">

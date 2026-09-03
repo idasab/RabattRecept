@@ -9,7 +9,6 @@ import { Place } from '../core/offers.models';
 /** Vägen runt när positionen inte går att få: välj ort själv. */
 @Component({
   selector: 'app-place-search',
-  standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="search">

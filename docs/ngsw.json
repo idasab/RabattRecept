@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1788264245270,
+  "timestamp": 1788438366900,
   "index": "/RabattRecept/index.html",
   "assetGroups": [
     {
@@ -15,11 +15,11 @@
         "/RabattRecept/assets/fonts/permanent-marker-latin-400.woff2",
         "/RabattRecept/favicon.ico",
         "/RabattRecept/index.html",
-        "/RabattRecept/main.b8666dc08aab7864.js",
+        "/RabattRecept/main.1d4b2824ef90ca3a.js",
         "/RabattRecept/manifest.webmanifest",
-        "/RabattRecept/polyfills.8a3ae097903cfef4.js",
+        "/RabattRecept/polyfills.67a4de7e290c96e8.js",
         "/RabattRecept/runtime.1770fc32aa68bb67.js",
-        "/RabattRecept/styles.b279020215bd5e04.css"
+        "/RabattRecept/styles.3dc9dcc8c5133d54.css"
       ],
       "patterns": []
     },
@@ -79,13 +79,13 @@
     "/RabattRecept/assets/icons/icon-512.png": "1cf38e71d4f004e780eb242e7f3eb04de1ad55d5",
     "/RabattRecept/commissioner-latin-400-700.aa924b7c62245c84.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
     "/RabattRecept/favicon.ico": "5fe10c16b7bf810c3259ae856695ba1119eb2733",
-    "/RabattRecept/index.html": "4d7efeb16308d80ff54487bb297c064eb956db9f",
-    "/RabattRecept/main.b8666dc08aab7864.js": "2ef967c7f20e8757a1c903a2f9cb91aef6108b7f",
+    "/RabattRecept/index.html": "f8e16155dfe5a33130a96b528d3bb3e5f47049cb",
+    "/RabattRecept/main.1d4b2824ef90ca3a.js": "6e4fe0d3026a3d822dc70e367203ea91a7d59dbf",
     "/RabattRecept/manifest.webmanifest": "a0ff8abef3e61975d6118c0ea4135283d7ec4e03",
     "/RabattRecept/permanent-marker-latin-400.09f7b6b7f4b56175.woff2": "5190bac9999e35c0c4f2a005a01f60b330c5615b",
-    "/RabattRecept/polyfills.8a3ae097903cfef4.js": "f8ffce8571964634385e658c033f5b1dd6cf6942",
+    "/RabattRecept/polyfills.67a4de7e290c96e8.js": "fcf207e63e677923914aa436be80804677dc4fd4",
     "/RabattRecept/runtime.1770fc32aa68bb67.js": "f96bae587be1cadcfce61f3c58c55e2674fd0428",
-    "/RabattRecept/styles.b279020215bd5e04.css": "c41d0eea3a841c76e675d08890df5532c3a9cfbb"
+    "/RabattRecept/styles.3dc9dcc8c5133d54.css": "248983e91e78650a2d4c1a3f848ae4d1dc772c17"
   },
   "navigationUrls": [
     {

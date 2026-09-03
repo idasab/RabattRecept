@@ -74,7 +74,6 @@ interface StoredSettings {
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   imports: [
     CommonModule,
     ChainFilterComponent,

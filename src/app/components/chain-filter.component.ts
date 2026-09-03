@@ -19,7 +19,6 @@ const STEP = 4;
  */
 @Component({
   selector: 'app-chain-filter',
-  standalone: true,
   imports: [CommonModule],
   template: `
     <section class="setting">

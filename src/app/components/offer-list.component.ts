@@ -5,7 +5,6 @@ import { Offer } from '../core/offers.models';
 
 @Component({
   selector: 'app-offer-list',
-  standalone: true,
   imports: [CommonModule],
   template: `
     <ul class="offers">

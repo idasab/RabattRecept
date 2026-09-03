@@ -14,7 +14,6 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
  */
 @Component({
   selector: 'app-cooking-time-filter',
-  standalone: true,
   imports: [CommonModule],
   template: `
     <section class="setting">

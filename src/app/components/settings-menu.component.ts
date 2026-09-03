@@ -24,7 +24,6 @@ import { FormsModule } from '@angular/forms';
  */
 @Component({
   selector: 'app-settings-menu',
-  standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <ng-container *ngIf="open">

@@ -26,7 +26,6 @@ import { OfferListComponent } from './offer-list.component';
  */
 @Component({
   selector: 'app-discount-page',
-  standalone: true,
   imports: [CommonModule, OfferListComponent],
   template: `
     <main class="page">

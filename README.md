@@ -15,15 +15,32 @@ men kompilerad och lintad, för den dagen den ska fram igen.
 
 | Del | Version | Varför just den |
 | --- | --- | --- |
-| Angular | 16.2 | Kravet är `^16.14.0 \|\| >=18.10.0`, alltså öppet uppåt, så det fungerar på Node 20.18.0. Nyare Angular kräver Node 20.19 eller senare och startar inte här. |
-| angular-eslint | 16.3.1 | `ng add` drar annars in v21 med ESLint 9 och flat config, som kräver Angular 20. Versionen är låst så att `npm install` inte glider iväg. |
+| Angular | 19.2 | Kravet är `^18.19.1 \|\| ^20.11.1 \|\| >=22.0.0`, vilket Node 20.18.0 uppfyller. Angular 20 kräver Node `^20.19.0` och 22 kräver `^22.22.3`, så 19 är den högsta versionen den här maskinen kan köra — det fattas en patchversion av Node till 20. |
+| angular-eslint | 19.8.1 | Följer Angulars major. Den godtar ESLint `^8.57.0`, så uppsättningen kunde stanna på eslintrc i stället för flat config. Ett obundet `ng add` drar in senaste majorversionen och kräver då nyare Angular. |
 | Erbjudanden | Tjek (`squid-api.tjek.com/v2`) | Samma källa som ereklamblad.se. Gratis, ingen nyckel, och skickar CORS-huvuden — därför kan telefonen hämta direkt utan mellanserver. |
 | Recept och betyg | Tasteline (`tasteline.com/wp-json/wp/v2`) och Zeta (`zeta.nu/wp-json/wp/v2`) | De två svenska receptkällor jag hittade som både har betyg på femgradig skala och svarar med CORS-huvuden. Se **Receptkällorna** nedan för vad som föll bort och varför. |
 | Ortssökning | Open-Meteo Geocoding | Gratis, ingen nyckel. Används bara när positionen inte går att få. |
 | Ortsnamn från koordinater | BigDataCloud | Gratis utan nyckel för klientanrop. Namnet är trevligt men inte nödvändigt — misslyckas det heter platsen "Din plats". |
 
-Angular 16 ligger utanför Angulars officiellt testade Node-matris (den listar
-Node 16 och 18), men `engines` tillåter Node 20 och CLI:n kör utan invändningar.
+Uppgraderingen från 16 till 19 gick i tre steg, en major i taget, med hela
+testsviten som grind mellan stegen. Källkoden behövde nästan ingenting: appen
+hade redan inga NgModules, bara standalone-komponenter, `bootstrapApplication`
+och provide-funktioner, vilket är det som blev normen i 17. Det som ändrades
+var att `HttpClientTestingModule` byttes mot `provideHttpClientTesting` i två
+spec-filer, att två utdata döptes om från `toggle` till `toggled` sedan
+angular-eslint 18 påpekat att namnet krockar med DOM:s egen händelse, och att
+`standalone: true` togs bort eftersom det är förval från 19.
+
+`@angular/router` och `@angular/animations` är borta ur beroendena, för
+ingenting importerar dem. `@angular/platform-browser-dynamic` såg lika oanvänd
+ut men står kvar: Karma-byggaren genererar en test-main som importerar
+`@angular/platform-browser-dynamic/testing`, och utan paketet vägrar hela
+testkörningen starta.
+
+Bygget använder fortfarande webpack-byggaren (`:browser`). Angular 19 erbjuder
+en migration till den esbuild-baserade byggaren, men den flyttar utdata till
+`dist/rabatt-recept/browser` och kräver därmed en ändring i
+`tools/build-pages.py`, så den är inte körd.
 
 ## Kom igång
 
