@@ -159,7 +159,7 @@
     [chains]="chains()"
     [selected]="selected()"
     [favorites]="favorites()"
-    (toggle)="toggleChain($event)"
+    (toggled)="toggleChain($event)"
     (favorite)="toggleFavorite($event)"
     (clear)="clearChains()"
   ></app-chain-filter>
@@ -167,7 +167,7 @@
   <app-cooking-time-filter
     *ngIf="recipes().length"
     [selected]="cookingTimes()"
-    (toggle)="toggleCookingTime($event)"
+    (toggled)="toggleCookingTime($event)"
   ></app-cooking-time-filter>
 
   <section class="recipes-head" *ngIf="chains().length">

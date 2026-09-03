@@ -40,7 +40,7 @@ const STEP = 4;
               type="checkbox"
               [attr.aria-label]="label(chain)"
               [checked]="selected.has(chain.id)"
-              (change)="toggle.emit(chain.id)"
+              (change)="toggled.emit(chain.id)"
             />
             <span class="dot" aria-hidden="true" [style.background]="chain.color"></span>
             <span class="name">{{ chain.name }}</span>
@@ -231,7 +231,11 @@ export class ChainFilterComponent implements OnChanges {
   @Input({ required: true }) selected: ReadonlySet<string> = new Set();
   @Input() favorites: ReadonlySet<string> = new Set();
 
-  @Output() readonly toggle = new EventEmitter<string>();
+  /**
+   * Heter toggled och inte toggle: DOM har en egen toggle-händelse, och en
+   * utdata med samma namn går inte att skilja från den i en mall.
+   */
+  @Output() readonly toggled = new EventEmitter<string>();
   @Output() readonly favorite = new EventEmitter<string>();
   @Output() readonly clear = new EventEmitter<void>();
 

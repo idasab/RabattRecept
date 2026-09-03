@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TjekOffer, TjekService } from './tjek.service';
+import { provideHttpClient } from '@angular/common/http';
 
 const PLACE = { latitude: 57.7, longitude: 11.97 };
 
@@ -25,7 +26,9 @@ describe('TjekService', () => {
 
   beforeEach(() => {
     nästaId = 0;
-    TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(TjekService);
     http = TestBed.inject(HttpTestingController);
   });

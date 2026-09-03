@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { PlaceSearchComponent } from './place-search.component';
+import { provideHttpClient } from '@angular/common/http';
 
 describe('PlaceSearchComponent', () => {
   let fixture: ComponentFixture<PlaceSearchComponent>;
@@ -11,7 +12,8 @@ describe('PlaceSearchComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [PlaceSearchComponent, HttpClientTestingModule],
+      imports: [PlaceSearchComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
 
     fixture = TestBed.createComponent(PlaceSearchComponent);

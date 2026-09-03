@@ -50,7 +50,7 @@ describe('CookingTimeFilterComponent', () => {
 
   it('skickar vidare vilket spann som klickades', () => {
     const toggled: CookingTimeBand[] = [];
-    fixture.componentInstance.toggle.subscribe((band) => toggled.push(band));
+    fixture.componentInstance.toggled.subscribe((band) => toggled.push(band));
 
     boxes()[2].click();
 

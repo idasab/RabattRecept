@@ -27,7 +27,7 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
               type="checkbox"
               [attr.aria-label]="band.label"
               [checked]="selected.has(band.id)"
-              (change)="toggle.emit(band.id)"
+              (change)="toggled.emit(band.id)"
             />
             <span class="name">{{ band.short }}</span>
           </label>
@@ -112,7 +112,8 @@ import { COOKING_TIME_BANDS, CookingTimeBand } from '../core/cooking-time';
 export class CookingTimeFilterComponent {
   @Input({ required: true }) selected: ReadonlySet<CookingTimeBand> = new Set();
 
-  @Output() readonly toggle = new EventEmitter<CookingTimeBand>();
+  /** Heter toggled och inte toggle, som krockar med DOM:s egen händelse. */
+  @Output() readonly toggled = new EventEmitter<CookingTimeBand>();
 
   readonly bands = COOKING_TIME_BANDS;
 }
