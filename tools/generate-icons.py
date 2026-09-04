@@ -1,14 +1,17 @@
 """Genererar appens ikoner i alla storlekar, plus favicon.ico.
 
 Motivet är ett procenttecken där snedstrecket är en gaffel: två ringar och ett
-bestick i gräddvitt mot en varm övergång från saffran till tomat. Appen handlar
-om att laga mat av rean, så ikonen säger båda sakerna — procenten känns igen på
-avstånd, gaffeln på nära håll.
+bestick i gräddvitt mot en enfärgad tomatröd platta. Appen handlar om att laga
+mat av rean, så ikonen säger båda sakerna — procenten känns igen på avstånd,
+gaffeln på nära håll.
 
-Färgerna är appens egna accenter, så ikonen på hemskärmen ser ut som det man
-möts av när man öppnar den. Körs med `python tools/generate-icons.py` och
-skriver över filerna i src/assets/icons. Inga beroenden utöver
-standardbiblioteket.
+Plattan är enfärgad med flit. En övergång syns knappt vid 48 px, men den gör
+motivets kanter olika tydliga beroende på var de ligger, och en enda färg
+lämnar hela kontrasten till motivet. Färgen är appens egen accent, så ikonen på
+hemskärmen ser ut som det man möts av när man öppnar den.
+
+Körs med `python tools/generate-icons.py` och skriver över filerna i
+src/assets/icons. Inga beroenden utöver standardbiblioteket.
 """
 import math
 import struct
@@ -20,8 +23,8 @@ OUT = Path(__file__).resolve().parent.parent / "src" / "assets" / "icons"
 # 180 för hemskärmen, 192 och 512 för manifestet, 1024 för hög upplösning.
 SIZES = (180, 192, 512, 1024)
 
+# Motivet i gräddvitt mot appens tomat, samma två färger som gränssnittet.
 CREAM = (255, 246, 236)
-SAFFRON = (232, 160, 32)
 TOMATO = (198, 74, 42)
 
 # Supersampling per axel. Motivet har hårda kanter, så det behövs för mjuka linjer.
@@ -46,11 +49,6 @@ TINE_COUNT = 3
 TINE_SPREAD = 0.060
 TINE_HALF_WIDTH = 0.024
 TINE_START = 0.55
-
-
-def lerp(a, b, t):
-    t = min(max(t, 0.0), 1.0)
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
 def distance_to_segment(x, y, x1, y1, x2, y2):
@@ -98,10 +96,7 @@ def in_percent(x, y):
 
 
 def sample(x, y):
-    if in_percent(x, y):
-        return CREAM
-    # Diagonal övergång, så att den följer procenttecknets egen lutning.
-    return lerp(SAFFRON, TOMATO, (x + y) / 2)
+    return CREAM if in_percent(x, y) else TOMATO
 
 
 def chunk(tag, payload):

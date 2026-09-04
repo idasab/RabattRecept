@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1788438366900,
+  "timestamp": 1788518499268,
   "index": "/RabattRecept/index.html",
   "assetGroups": [
     {
@@ -73,12 +73,12 @@
   "hashTable": {
     "/RabattRecept/assets/fonts/commissioner-latin-400-700.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
     "/RabattRecept/assets/fonts/permanent-marker-latin-400.woff2": "5190bac9999e35c0c4f2a005a01f60b330c5615b",
-    "/RabattRecept/assets/icons/icon-1024.png": "98359ef3f179cad48fec5115ec7b8b7f1bd87fc8",
-    "/RabattRecept/assets/icons/icon-180.png": "3731b22b0da6f4ac8402c88b26885b7942b8364d",
-    "/RabattRecept/assets/icons/icon-192.png": "1033bcbb3f72fad509c9d3a85d994780e2a89048",
-    "/RabattRecept/assets/icons/icon-512.png": "1cf38e71d4f004e780eb242e7f3eb04de1ad55d5",
+    "/RabattRecept/assets/icons/icon-1024.png": "05d505bfbe50c2bb5f3f0f77fd5680a62b1b77f8",
+    "/RabattRecept/assets/icons/icon-180.png": "20964e8b280a6081f973b2555a4f890098a4e81b",
+    "/RabattRecept/assets/icons/icon-192.png": "1ceefcf0708735763690cdd1365d12bcdd87b4d8",
+    "/RabattRecept/assets/icons/icon-512.png": "927aec4c6d8500004c7b7c998a8878ea37b5c5e8",
     "/RabattRecept/commissioner-latin-400-700.aa924b7c62245c84.woff2": "5f07c0402e6dad8d18adb52bf48ecd80ba0de94d",
-    "/RabattRecept/favicon.ico": "5fe10c16b7bf810c3259ae856695ba1119eb2733",
+    "/RabattRecept/favicon.ico": "4310a463599e1bb87aae547e6ba1d1a967468fd7",
     "/RabattRecept/index.html": "f8e16155dfe5a33130a96b528d3bb3e5f47049cb",
     "/RabattRecept/main.1d4b2824ef90ca3a.js": "6e4fe0d3026a3d822dc70e367203ea91a7d59dbf",
     "/RabattRecept/manifest.webmanifest": "a0ff8abef3e61975d6118c0ea4135283d7ec4e03",
